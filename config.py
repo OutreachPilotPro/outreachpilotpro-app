@@ -16,6 +16,6 @@ class Config:
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', 'your-google-client-id-here')
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', 'your-google-client-secret-here')
 
-    # Local callback URL for now (we’ll update for production)
-    OAUTH_CALLBACK_URL = "http://localhost:8800/login/google/authorize"
+    # Production callback URL for Render deployment
+    OAUTH_CALLBACK_URL = "https://outreachpilotpro-app.onrender.com/login/google/authorize"
 
