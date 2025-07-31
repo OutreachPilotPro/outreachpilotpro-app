@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - OutreachPilotPro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #388E3C;
+            --secondary: #2196F3;
+            --dark: #212121;
+            --light: #f5f5f5;
+            --gradient: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+        
+        /* Navigation */
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .welcome-section {
+            background: var(--gradient);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+        }
+        
+        .welcome-section h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .welcome-section p {
+            opacity: 0.9;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .card-content {
+            padding: 1.5rem;
+        }
+        
+        /* Recent Emails */
+        .email-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .email-item:last-child {
+            border-bottom: none;
+        }
+        
+        .email-info {
+            flex: 1;
+        }
+        
+        .email-address {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .email-company {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .email-source {
+            font-size: 0.8rem;
+            color: var(--primary);
+            background: rgba(76, 175, 80, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        
+        /* Recent Campaigns */
+        .campaign-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .campaign-item:last-child {
+            border-bottom: none;
+        }
+        
+        .campaign-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+        
+        .campaign-status {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-draft { background: #fff3cd; color: #856404; }
+        .status-sending { background: #d1ecf1; color: #0c5460; }
+        .status-completed { background: #d4edda; color: #155724; }
+        
+        .campaign-meta {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+        
+        /* Subscription Info */
+        .subscription-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+        }
+        
+        .subscription-plan {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subscription-price {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .subscription-features {
+            list-style: none;
+            margin-bottom: 1.5rem;
+        }
+        
+        .subscription-features li {
+            padding: 0.25rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .subscription-features li::before {
+            content: '✓';
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .upgrade-btn {
+            background: white;
+            color: #667eea;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .upgrade-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        /* Usage Progress */
+        .usage-item {
+            margin-bottom: 1rem;
+        }
+        
+        .usage-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .usage-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .usage-fill {
+            height: 100%;
+            background: var(--gradient);
+            transition: width 0.3s ease;
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .action-btn {
+            background: white;
+            border: 2px solid #e0e0e0;
+            padding: 1rem;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #333;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .action-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .action-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">OutreachPilotPro</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('scrape_page') }}">Find Emails</a>
+            <a href="{{ url_for('campaigns_page') }}">Campaigns</a>
+            <a href="{{ url_for('subscription_page') }}">Subscription</a>
+        </div>
+        <div class="user-menu">
+            <span>{{ user.name }}</span>
+            <div class="user-avatar">{{ user.name[0] }}</div>
+            <a href="{{ url_for('logout') }}" style="color: #666;">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+            <h1>Welcome back, {{ user.name }}!</h1>
+            <p>Here's what's happening with your outreach campaigns today.</p>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{{ usage_stats.current_month.emails_sent }}</div>
+                <div class="stat-label">Emails Sent This Month</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ usage_stats.current_month.emails_scraped }}</div>
+                <div class="stat-label">Emails Found</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ usage_stats.current_month.campaigns_created }}</div>
+                <div class="stat-label">Campaigns Created</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ subscription.plan_name }}</div>
+                <div class="stat-label">Current Plan</div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="main-content">
+                <!-- Recent Emails -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Recent Emails Found</div>
+                        <a href="{{ url_for('scrape_page') }}" style="color: var(--primary); text-decoration: none;">View All</a>
+                    </div>
+                    <div class="card-content">
+                        {% if recent_emails %}
+                            {% for email in recent_emails %}
+                                <div class="email-item">
+                                    <div class="email-info">
+                                        <div class="email-address">{{ email.email }}</div>
+                                        <div class="email-company">{{ email.company_name }}</div>
+                                    </div>
+                                    <div class="email-source">{{ email.source }}</div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p style="color: #666; text-align: center; padding: 2rem;">No emails found yet. <a href="{{ url_for('scrape_page') }}" style="color: var(--primary);">Start scraping</a> to find your first emails!</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Recent Campaigns -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Recent Campaigns</div>
+                        <a href="{{ url_for('campaigns_page') }}" style="color: var(--primary); text-decoration: none;">View All</a>
+                    </div>
+                    <div class="card-content">
+                        {% if recent_campaigns %}
+                            {% for campaign in recent_campaigns %}
+                                <div class="campaign-item">
+                                    <div class="campaign-name">{{ campaign[1] }}</div>
+                                    <div class="campaign-status status-{{ campaign[2] }}">{{ campaign[2] }}</div>
+                                    <div class="campaign-meta">
+                                        {{ campaign[4] }} • {{ campaign[5] }} recipients
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p style="color: #666; text-align: center; padding: 2rem;">No campaigns yet. <a href="{{ url_for('new_campaign') }}" style="color: var(--primary);">Create your first campaign</a>!</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <!-- Subscription Info -->
+                <div class="subscription-info">
+                    <div class="subscription-plan">{{ subscription.plan_name }}</div>
+                    <div class="subscription-price">${{ subscription.price }}/month</div>
+                    <ul class="subscription-features">
+                        <li>{{ subscription.limits.emails_per_month }} emails/month</li>
+                        <li>{{ subscription.limits.scrapes_per_month }} email searches</li>
+                        <li>{{ subscription.limits.campaigns_per_month }} campaigns</li>
+                        {% if subscription.limits.email_verification %}
+                            <li>Email verification</li>
+                        {% endif %}
+                    </ul>
+                    {% if subscription.tier == 'free' %}
+                        <a href="{{ url_for('upgrade_subscription', plan_id='starter') }}" class="upgrade-btn">Upgrade Now</a>
+                    {% endif %}
+                </div>
+
+                <!-- Usage Progress -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Usage This Month</div>
+                    </div>
+                    <div class="card-content">
+                        <div class="usage-item">
+                            <div class="usage-label">
+                                <span>Emails Sent</span>
+                                <span>{{ usage_stats.current_month.emails_sent }}/{{ usage_stats.current_month.limits.emails_per_month }}</span>
+                            </div>
+                            <div class="usage-bar">
+                                <div class="usage-fill" style="width: {{ (usage_stats.current_month.emails_sent / usage_stats.current_month.limits.emails_per_month * 100) | round(1) }}%"></div>
+                            </div>
+                        </div>
+                        <div class="usage-item">
+                            <div class="usage-label">
+                                <span>Email Searches</span>
+                                <span>{{ usage_stats.current_month.emails_scraped }}/{{ usage_stats.current_month.limits.scrapes_per_month }}</span>
+                            </div>
+                            <div class="usage-bar">
+                                <div class="usage-fill" style="width: {{ (usage_stats.current_month.emails_scraped / usage_stats.current_month.limits.scrapes_per_month * 100) | round(1) }}%"></div>
+                            </div>
+                        </div>
+                        <div class="usage-item">
+                            <div class="usage-label">
+                                <span>Campaigns</span>
+                                <span>{{ usage_stats.current_month.campaigns_created }}/{{ usage_stats.current_month.limits.campaigns_per_month }}</span>
+                            </div>
+                            <div class="usage-bar">
+                                <div class="usage-fill" style="width: {{ (usage_stats.current_month.campaigns_created / usage_stats.current_month.limits.campaigns_per_month * 100) | round(1) }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Quick Actions</div>
+                    </div>
+                    <div class="card-content">
+                        <div class="quick-actions">
+                            <a href="{{ url_for('scrape_page') }}" class="action-btn">
+                                <div class="action-icon">🔍</div>
+                                <div>Find Emails</div>
+                            </a>
+                            <a href="{{ url_for('new_campaign') }}" class="action-btn">
+                                <div class="action-icon">📧</div>
+                                <div>New Campaign</div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

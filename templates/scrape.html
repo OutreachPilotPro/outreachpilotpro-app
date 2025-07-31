@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Emails - OutreachPilotPro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #388E3C;
+            --secondary: #2196F3;
+            --dark: #212121;
+            --light: #f5f5f5;
+            --gradient: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+        
+        /* Navigation */
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .page-header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        /* Scraping Methods */
+        .scraping-methods {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .method-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .method-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .method-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .method-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .method-description {
+            color: #666;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            min-height: 100px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .submit-btn {
+            background: var(--gradient);
+            color: white;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Results */
+        .results-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+            display: none;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .results-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .results-count {
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .email-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .email-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s ease;
+        }
+        
+        .email-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .email-item:last-child {
+            border-bottom: none;
+        }
+        
+        .email-info {
+            flex: 1;
+        }
+        
+        .email-address {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+        
+        .email-domain {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .email-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .copy-btn {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .copy-btn:hover {
+            background: #1976d2;
+        }
+        
+        .save-btn {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .save-btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .scraping-methods {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">OutreachPilotPro</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('scrape_page') }}">Find Emails</a>
+            <a href="{{ url_for('campaigns_page') }}">Campaigns</a>
+            <a href="{{ url_for('subscription_page') }}">Subscription</a>
+        </div>
+        <div class="user-menu">
+            <span>{{ user.name }}</span>
+            <div class="user-avatar">{{ user.name[0] }}</div>
+            <a href="{{ url_for('logout') }}" style="color: #666;">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Find Business Emails</h1>
+            <p>Discover targeted email addresses from websites and companies</p>
+        </div>
+
+        <div class="scraping-methods">
+            <!-- Website Scraping -->
+            <div class="method-card">
+                <div class="method-icon">🌐</div>
+                <div class="method-title">Scrape Website</div>
+                <div class="method-description">
+                    Enter a website URL and we'll automatically find all email addresses from that domain.
+                </div>
+                <form id="website-form">
+                    <div class="form-group">
+                        <label class="form-label">Website URL</label>
+                        <input type="url" class="form-input" id="website-url" 
+                               placeholder="https://example.com" required>
+                    </div>
+                    <button type="submit" class="submit-btn">Find Emails</button>
+                </form>
+            </div>
+
+            <!-- Company Search -->
+            <div class="method-card">
+                <div class="method-icon">🏢</div>
+                <div class="method-title">Search Company</div>
+                <div class="method-description">
+                    Search for a company name and we'll find emails from their website and other sources.
+                </div>
+                <form id="company-form">
+                    <div class="form-group">
+                        <label class="form-label">Company Name</label>
+                        <input type="text" class="form-input" id="company-name" 
+                               placeholder="Acme Corporation" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Industry (Optional)</label>
+                        <input type="text" class="form-input" id="company-industry" 
+                               placeholder="Technology, Healthcare, etc.">
+                    </div>
+                    <button type="submit" class="submit-btn">Search Company</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Industry Search -->
+        <div class="method-card" style="grid-column: 1 / -1; margin-top: 2rem;">
+            <div class="method-icon">🏭</div>
+            <div class="method-title">Industry Search</div>
+            <div class="method-description">
+                Search for emails from multiple companies in a specific industry. Perfect for mass outreach campaigns.
+            </div>
+            <form id="industry-form">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Industry</label>
+                        <select class="form-input" id="industry-select" required>
+                            <option value="">Select Industry</option>
+                            <option value="technology">Technology</option>
+                            <option value="healthcare">Healthcare</option>
+                            <option value="finance">Finance</option>
+                            <option value="retail">Retail</option>
+                            <option value="manufacturing">Manufacturing</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Location (Optional)</label>
+                        <input type="text" class="form-input" id="industry-location" 
+                               placeholder="New York, CA, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Company Size (Optional)</label>
+                        <select class="form-input" id="industry-size">
+                            <option value="">Any Size</option>
+                            <option value="startup">Startup (1-50)</option>
+                            <option value="small">Small (51-200)</option>
+                            <option value="medium">Medium (201-1000)</option>
+                            <option value="large">Large (1000+)</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn">Search Industry</button>
+            </form>
+        </div>
+
+        <!-- Infinite Email Search -->
+        <div class="method-card" style="grid-column: 1 / -1; margin-top: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div class="method-icon">♾️</div>
+            <div class="method-title">Infinite Email Search</div>
+            <div class="method-description">
+                Access our massive database of emails from multiple sources. Find unlimited emails for any industry or location.
+            </div>
+            <form id="infinite-form">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label" style="color: white;">Industry</label>
+                        <select class="form-input" id="infinite-industry" required>
+                            <option value="">Select Industry</option>
+                            <option value="technology">Technology</option>
+                            <option value="healthcare">Healthcare</option>
+                            <option value="finance">Finance</option>
+                            <option value="retail">Retail</option>
+                            <option value="manufacturing">Manufacturing</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="color: white;">Location (Optional)</label>
+                        <input type="text" class="form-input" id="infinite-location" 
+                               placeholder="New York, CA, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="color: white;">Company Size</label>
+                        <select class="form-input" id="infinite-size">
+                            <option value="">Any Size</option>
+                            <option value="startup">Startup (1-50)</option>
+                            <option value="small">Small (51-200)</option>
+                            <option value="medium">Medium (201-1000)</option>
+                            <option value="large">Large (1000+)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="color: white;">Limit</label>
+                        <select class="form-input" id="infinite-limit">
+                            <option value="100">100 emails</option>
+                            <option value="500">500 emails</option>
+                            <option value="1000" selected>1000 emails</option>
+                            <option value="5000">5000 emails</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn" style="background: white; color: #667eea; font-weight: bold;">🔍 Search Infinite Database</button>
+            </form>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="results-section">
+            <div class="results-header">
+                <div class="results-title">Found Emails</div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div class="results-count" id="results-count">0 emails</div>
+                    <button id="create-campaign-btn" class="submit-btn" style="display: none;" onclick="createCampaign()">
+                        📧 Create Campaign
+                    </button>
+                </div>
+            </div>
+            <div class="email-list" id="email-list">
+                <!-- Results will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Website scraping form
+        document.getElementById('website-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('Website form submitted');
+            const url = document.getElementById('website-url').value;
+            console.log('URL:', url);
+            await scrapeWebsite(url);
+        });
+
+        // Company search form
+        document.getElementById('company-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const companyName = document.getElementById('company-name').value;
+            const industry = document.getElementById('company-industry').value;
+            await searchCompany(companyName, industry);
+        });
+
+        // Industry search form
+        document.getElementById('industry-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const industry = document.getElementById('industry-select').value;
+            const location = document.getElementById('industry-location').value;
+            const companySize = document.getElementById('industry-size').value;
+            await searchIndustry(industry, location, companySize);
+        });
+
+        // Infinite search form
+        document.getElementById('infinite-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const industry = document.getElementById('infinite-industry').value;
+            const location = document.getElementById('infinite-location').value;
+            const companySize = document.getElementById('infinite-size').value;
+            const limit = parseInt(document.getElementById('infinite-limit').value);
+            await searchInfinite(industry, location, companySize, limit);
+        });
+
+        async function scrapeWebsite(url) {
+            showLoading();
+            console.log('Scraping website:', url);
+            
+            try {
+                const response = await fetch('/api/scrape/website', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+                
+                console.log('Response status:', response.status);
+                const result = await response.json();
+                console.log('Result:', result);
+                showResults(result);
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Failed to scrape website. Please try again.');
+            }
+        }
+
+        async function searchCompany(companyName, industry) {
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/scrape/company', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        company_name: companyName,
+                        industry: industry 
+                    })
+                });
+                
+                const result = await response.json();
+                showResults(result);
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Failed to search company. Please try again.');
+            }
+        }
+
+        async function searchIndustry(industry, location, companySize) {
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/scrape/industry', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        industry: industry,
+                        location: location,
+                        company_size: companySize
+                    })
+                });
+                
+                const result = await response.json();
+                showIndustryResults(result);
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Failed to search industry. Please try again.');
+            }
+        }
+
+        async function searchInfinite(industry, location, companySize, limit) {
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/search/infinite', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        industry: industry,
+                        location: location,
+                        company_size: companySize,
+                        limit: limit
+                    })
+                });
+                
+                const result = await response.json();
+                showInfiniteResults(result);
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Failed to search infinite database. Please try again.');
+            }
+        }
+
+        function showLoading() {
+            const resultsSection = document.getElementById('results-section');
+            const emailList = document.getElementById('email-list');
+            
+            resultsSection.style.display = 'block';
+            emailList.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Searching for emails...</p>
+                </div>
+            `;
+        }
+
+        function showResults(result) {
+            const resultsSection = document.getElementById('results-section');
+            const emailList = document.getElementById('email-list');
+            const resultsCount = document.getElementById('results-count');
+            const createCampaignBtn = document.getElementById('create-campaign-btn');
+            
+            if (result.success && result.emails && result.emails.length > 0) {
+                resultsCount.textContent = `${result.emails.length} emails`;
+                createCampaignBtn.style.display = 'inline-block';
+                
+                emailList.innerHTML = result.emails.map(email => `
+                    <div class="email-item">
+                        <div class="email-info">
+                            <div class="email-address">${email}</div>
+                            <div class="email-domain">${email.split('@')[1]}</div>
+                        </div>
+                        <div class="email-actions">
+                            <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
+                            <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                resultsCount.textContent = '0 emails';
+                createCampaignBtn.style.display = 'none';
+                emailList.innerHTML = `
+                    <div class="loading">
+                        <p>No emails found. Try a different URL or company name.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function showIndustryResults(result) {
+            const resultsSection = document.getElementById('results-section');
+            const emailList = document.getElementById('email-list');
+            const resultsCount = document.getElementById('results-count');
+            const createCampaignBtn = document.getElementById('create-campaign-btn');
+            
+            if (result.success && result.emails && result.emails.length > 0) {
+                resultsCount.textContent = `${result.emails.length} emails from ${result.companies_searched} companies`;
+                createCampaignBtn.style.display = 'inline-block';
+                
+                let html = '';
+                
+                // Show company breakdown
+                if (result.company_results && result.company_results.length > 0) {
+                    html += '<div style="margin-bottom: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">';
+                    html += '<h3 style="margin-bottom: 1rem; color: #333;">Companies Searched:</h3>';
+                    result.company_results.forEach(company => {
+                        html += `<div style="margin-bottom: 0.5rem; padding: 0.5rem; background: white; border-radius: 5px;">
+                            <strong>${company.company}</strong>: ${company.emails_found} emails found
+                        </div>`;
+                    });
+                    html += '</div>';
+                }
+                
+                // Show all emails
+                html += result.emails.map(email => `
+                    <div class="email-item">
+                        <div class="email-info">
+                            <div class="email-address">${email}</div>
+                            <div class="email-domain">${email.split('@')[1]}</div>
+                        </div>
+                        <div class="email-actions">
+                            <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
+                            <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                emailList.innerHTML = html;
+            } else {
+                resultsCount.textContent = '0 emails';
+                createCampaignBtn.style.display = 'none';
+                emailList.innerHTML = `
+                    <div class="loading">
+                        <p>No emails found for this industry. Try a different industry or location.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function showInfiniteResults(result) {
+            const resultsSection = document.getElementById('results-section');
+            const emailList = document.getElementById('email-list');
+            const resultsCount = document.getElementById('results-count');
+            const createCampaignBtn = document.getElementById('create-campaign-btn');
+            
+            if (result.success && result.emails && result.emails.length > 0) {
+                resultsCount.textContent = `${result.emails_returned} emails found (${result.emails_found} total)`;
+                createCampaignBtn.style.display = 'inline-block';
+                
+                let html = '';
+                
+                // Show sources used
+                if (result.sources_used && result.sources_used.length > 0) {
+                    html += '<div style="margin-bottom: 2rem; padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px;">';
+                    html += '<h3 style="margin-bottom: 1rem;">Sources Used:</h3>';
+                    html += '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">';
+                    result.sources_used.forEach(source => {
+                        html += `<span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.5rem; border-radius: 15px; font-size: 0.9rem;">${source}</span>`;
+                    });
+                    html += '</div></div>';
+                }
+                
+                // Show all emails
+                html += result.emails.map(email => `
+                    <div class="email-item">
+                        <div class="email-info">
+                            <div class="email-address">${email}</div>
+                            <div class="email-domain">${email.split('@')[1]}</div>
+                        </div>
+                        <div class="email-actions">
+                            <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
+                            <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                emailList.innerHTML = html;
+            } else {
+                resultsCount.textContent = '0 emails';
+                createCampaignBtn.style.display = 'none';
+                emailList.innerHTML = `
+                    <div class="loading">
+                        <p>No emails found in the infinite database. Try different search criteria.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function createCampaign() {
+            // Get all emails from the current results
+            const emailItems = document.querySelectorAll('.email-address');
+            const emails = Array.from(emailItems).map(item => item.textContent);
+            
+            // Store emails in localStorage for the campaign page
+            localStorage.setItem('campaign_emails', JSON.stringify(emails));
+            
+            // Redirect to campaign creation page
+            window.location.href = '/campaigns/new';
+        }
+
+        function showError(message) {
+            const resultsSection = document.getElementById('results-section');
+            const emailList = document.getElementById('email-list');
+            
+            resultsSection.style.display = 'block';
+            emailList.innerHTML = `
+                <div class="loading">
+                    <p style="color: #dc3545;">${message}</p>
+                </div>
+            `;
+        }
+
+        function copyEmail(email) {
+            navigator.clipboard.writeText(email).then(() => {
+                // Show a brief success message
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            });
+        }
+
+        function saveEmail(email) {
+            // This would typically save to the user's email list
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Saved!';
+            btn.style.background = '#28a745';
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '';
+            }, 2000);
+        }
+    </script>
+</body>
+</html> 

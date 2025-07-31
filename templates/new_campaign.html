@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Campaign - OutreachPilotPro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #388E3C;
+            --secondary: #2196F3;
+            --dark: #212121;
+            --light: #f5f5f5;
+            --gradient: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+        
+        /* Navigation */
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .page-header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        /* Campaign Form */
+        .campaign-form {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .form-section {
+            margin-bottom: 2rem;
+        }
+        
+        .form-section h3 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        /* Email List */
+        .email-list {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .email-list h3 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        
+        .email-count {
+            background: var(--gradient);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+        
+        .email-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .email-item {
+            background: white;
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            font-size: 0.9rem;
+        }
+        
+        /* Buttons */
+        .btn {
+            background: var(--gradient);
+            color: white;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .email-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">OutreachPilotPro</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('scrape_page') }}">Find Emails</a>
+            <a href="{{ url_for('campaigns_page') }}">Campaigns</a>
+            <a href="{{ url_for('subscription_page') }}">Subscription</a>
+        </div>
+        <div class="user-menu">
+            <span>{{ user.name }}</span>
+            <div class="user-avatar">{{ user.name[0] }}</div>
+            <a href="{{ url_for('logout') }}" style="color: #666;">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Create Email Campaign</h1>
+            <p>Send personalized emails to your scraped contacts</p>
+        </div>
+
+        <!-- Email List -->
+        <div class="email-list">
+            <h3>Selected Emails</h3>
+            <div class="email-count" id="email-count">0 emails selected</div>
+            <div class="email-grid" id="email-grid">
+                <!-- Emails will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Campaign Form -->
+        <div class="campaign-form">
+            <form id="campaign-form">
+                <div class="form-section">
+                    <h3>Campaign Details</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="campaign-name">Campaign Name</label>
+                            <input type="text" id="campaign-name" name="campaign_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject-line">Subject Line</label>
+                            <input type="text" id="subject-line" name="subject_line" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Email Content</h3>
+                    <div class="form-group">
+                        <label for="email-content">Email Body</label>
+                        <textarea id="email-content" name="email_content" required placeholder="Write your email content here..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="sender-name">Sender Name</label>
+                        <input type="text" id="sender-name" name="sender_name" value="{{ user.name }}" required>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Campaign Settings</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="send-delay">Delay Between Emails (seconds)</label>
+                            <input type="number" id="send-delay" name="send_delay" value="5" min="1" max="60">
+                        </div>
+                        <div class="form-group">
+                            <label for="max-emails">Max Emails Per Hour</label>
+                            <input type="number" id="max-emails" name="max_emails" value="100" min="1" max="1000">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn">Create & Send Campaign</button>
+                    <button type="button" class="btn btn-secondary" onclick="saveDraft()">Save as Draft</button>
+                    <a href="{{ url_for('campaigns_page') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Creating campaign and sending emails...</p>
+        </div>
+    </div>
+
+    <script>
+        // Load emails from localStorage
+        window.addEventListener('DOMContentLoaded', function() {
+            loadEmailsFromStorage();
+        });
+
+        function loadEmailsFromStorage() {
+            const emails = JSON.parse(localStorage.getItem('selectedEmails') || '[]');
+            const emailGrid = document.getElementById('email-grid');
+            const emailCount = document.getElementById('email-count');
+            
+            emailCount.textContent = `${emails.length} emails selected`;
+            
+            emailGrid.innerHTML = '';
+            emails.forEach(email => {
+                const emailItem = document.createElement('div');
+                emailItem.className = 'email-item';
+                emailItem.textContent = email;
+                emailGrid.appendChild(emailItem);
+            });
+        }
+
+        function saveDraft() {
+            const formData = new FormData(document.getElementById('campaign-form'));
+            const draft = {
+                name: formData.get('campaign_name'),
+                subject: formData.get('subject_line'),
+                content: formData.get('email_content'),
+                sender: formData.get('sender_name'),
+                delay: formData.get('send_delay'),
+                maxEmails: formData.get('max_emails'),
+                emails: JSON.parse(localStorage.getItem('selectedEmails') || '[]'),
+                created: new Date().toISOString()
+            };
+            
+            const drafts = JSON.parse(localStorage.getItem('campaignDrafts') || '[]');
+            drafts.push(draft);
+            localStorage.setItem('campaignDrafts', JSON.stringify(drafts));
+            
+            alert('Campaign saved as draft!');
+        }
+
+        document.getElementById('campaign-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const emails = JSON.parse(localStorage.getItem('selectedEmails') || '[]');
+            
+            if (emails.length === 0) {
+                alert('Please select emails first!');
+                return;
+            }
+            
+            const campaignData = {
+                name: formData.get('campaign_name'),
+                subject: formData.get('subject_line'),
+                content: formData.get('email_content'),
+                sender_name: formData.get('sender_name'),
+                send_delay: parseInt(formData.get('send_delay')),
+                max_emails_per_hour: parseInt(formData.get('max_emails')),
+                emails: emails
+            };
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/campaigns/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(campaignData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Campaign created successfully!');
+                    localStorage.removeItem('selectedEmails');
+                    window.location.href = '/campaigns';
+                } else {
+                    alert('Error creating campaign: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error creating campaign: ' + error.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html> 
