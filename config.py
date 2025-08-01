@@ -16,6 +16,6 @@ class Config:
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', 'your-google-client-id-here')
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', 'your-google-client-secret-here')
 
-    # Temporary callback URL using Render subdomain (until Google Cloud quota resets)
-    OAUTH_CALLBACK_URL = "https://outreachpilotpro-app.onrender.com/login/google/authorize"
+    # Production callback URL for custom domain
+    OAUTH_CALLBACK_URL = "https://outreachpilotpro.com/login/google/authorize"
 
