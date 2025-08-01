@@ -37,7 +37,7 @@ class SubscriptionPlans:
         "starter": {
             "name": "Starter",
             "price": 49,  # per month
-            "stripe_price_id": "price_starter_monthly",
+            "stripe_price_id": "price_1RrQVpLeRd30DB0ZL6jPxt9K",
             "limits": {
                 "emails_per_month": 5000,
                 "scrapes_per_month": 2000,
@@ -51,7 +51,7 @@ class SubscriptionPlans:
         "professional": {
             "name": "Professional",
             "price": 149,
-            "stripe_price_id": "price_professional_monthly",
+            "stripe_price_id": "price_1RrQVqLeRd30DB0ZTcJFg3Bv",
             "limits": {
                 "emails_per_month": 50000,
                 "scrapes_per_month": 20000,
@@ -66,7 +66,7 @@ class SubscriptionPlans:
         "enterprise": {
             "name": "Enterprise",
             "price": 499,
-            "stripe_price_id": "price_enterprise_monthly",
+            "stripe_price_id": "price_1RrQVrLeRd30DB0ZyXDSe2O3",
             "limits": {
                 "emails_per_month": 500000,
                 "scrapes_per_month": 100000,
