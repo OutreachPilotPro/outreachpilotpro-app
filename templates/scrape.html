@@ -619,6 +619,7 @@
 
         async function searchInfinite(industry, location, companySize, limit) {
             showLoading();
+            console.log('Searching infinite database with:', { industry, location, companySize, limit });
             
             try {
                 const response = await fetch('/api/search/infinite', {
@@ -634,10 +635,19 @@
                     })
                 });
                 
+                console.log('Response status:', response.status);
                 const result = await response.json();
+                console.log('Infinite search result:', result);
+                
+                if (!result.success) {
+                    console.error('Search failed:', result.error);
+                    showError(`Search failed: ${result.error || 'Unknown error'}`);
+                    return;
+                }
+                
                 showInfiniteResults(result);
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error in searchInfinite:', error);
                 showError('Failed to search infinite database. Please try again.');
             }
         }
@@ -744,8 +754,22 @@
             const resultsCount = document.getElementById('results-count');
             const createCampaignBtn = document.getElementById('create-campaign-btn');
             
-            if (result.success && result.emails && result.emails.length > 0) {
-                resultsCount.textContent = `${result.emails_returned} emails found (${result.emails_found} total)`;
+            console.log('Showing infinite results:', result);
+            
+            // Check if result has the expected structure
+            if (!result || typeof result !== 'object') {
+                resultsCount.textContent = '0 emails';
+                createCampaignBtn.style.display = 'none';
+                emailList.innerHTML = `
+                    <div class="loading">
+                        <p style="color: #dc3545;">Invalid response from server. Please try again.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            if (result.success && result.emails && Array.isArray(result.emails) && result.emails.length > 0) {
+                resultsCount.textContent = `${result.emails_returned || result.emails.length} emails found (${result.emails_found || result.emails.length} total)`;
                 createCampaignBtn.style.display = 'inline-block';
                 
                 let html = '';
@@ -759,6 +783,13 @@
                         html += `<span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.5rem; border-radius: 15px; font-size: 0.9rem;">${source}</span>`;
                     });
                     html += '</div></div>';
+                }
+                
+                // Show note if present
+                if (result.note) {
+                    html += `<div style="margin-bottom: 1rem; padding: 1rem; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; color: #856404;">
+                        <strong>Note:</strong> ${result.note}
+                    </div>`;
                 }
                 
                 // Show all emails
@@ -779,9 +810,17 @@
             } else {
                 resultsCount.textContent = '0 emails';
                 createCampaignBtn.style.display = 'none';
+                
+                let errorMessage = 'No emails found in the infinite database. Try different search criteria.';
+                if (result.error) {
+                    errorMessage = `Search error: ${result.error}`;
+                } else if (!result.success) {
+                    errorMessage = 'Search was not successful. Please try again.';
+                }
+                
                 emailList.innerHTML = `
                     <div class="loading">
-                        <p>No emails found in the infinite database. Try different search criteria.</p>
+                        <p style="color: #dc3545;">${errorMessage}</p>
                     </div>
                 `;
             }
