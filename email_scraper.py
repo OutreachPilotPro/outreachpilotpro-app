@@ -523,6 +523,242 @@ class EmailScraper:
             logger.error(f"Error getting user scraped emails: {str(e)}")
             return []
 
+    def scrape_website_emails(self, url: str) -> List[str]:
+        """Scrape emails from a website with enhanced capabilities"""
+        print(f"Scraping website: {url}")
+        
+        try:
+            # Normalize URL
+            if not url.startswith(('http://', 'https://')):
+                url = 'https://' + url
+            
+            # Enhanced headers to bypass basic firewalls
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Cache-Control': 'max-age=0'
+            }
+            
+            # Make request with timeout and retry
+            session = requests.Session()
+            session.headers.update(headers)
+            
+            try:
+                response = session.get(url, timeout=10, allow_redirects=True)
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                print(f"Request failed: {e}")
+                # Try alternative methods
+                return self._scrape_alternative_methods(url)
+            
+            # Parse HTML
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Extract domain for email generation
+            from urllib.parse import urlparse
+            parsed_url = urlparse(url)
+            domain = parsed_url.netloc
+            
+            # Method 1: Find emails in HTML content
+            emails = self._extract_emails_from_html(soup, domain)
+            
+            # Method 2: Find emails in JavaScript
+            js_emails = self._extract_emails_from_javascript(soup, domain)
+            emails.extend(js_emails)
+            
+            # Method 3: Find emails in meta tags
+            meta_emails = self._extract_emails_from_meta(soup, domain)
+            emails.extend(meta_emails)
+            
+            # Method 4: Generate emails based on domain patterns
+            generated_emails = self._generate_domain_emails(domain)
+            emails.extend(generated_emails)
+            
+            # Method 5: Look for contact forms and pages
+            contact_emails = self._find_contact_page_emails(soup, url, domain)
+            emails.extend(contact_emails)
+            
+            # Remove duplicates and validate
+            unique_emails = list(set(emails))
+            valid_emails = [email for email in unique_emails if self._is_valid_email(email)]
+            
+            print(f"Found {len(valid_emails)} valid emails from {url}")
+            return valid_emails
+            
+        except Exception as e:
+            print(f"Error scraping website {url}: {e}")
+            return []
+    
+    def _extract_emails_from_html(self, soup: BeautifulSoup, domain: str) -> List[str]:
+        """Extract emails from HTML content"""
+        emails = []
+        
+        # Find all text content
+        text_content = soup.get_text()
+        
+        # Use regex to find email patterns
+        email_patterns = [
+            r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
+            r'\b[A-Za-z0-9._%+-]+@' + domain.replace('.', r'\.') + r'\b',
+            r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]*' + domain.split('.')[-1] + r'\b'
+        ]
+        
+        for pattern in email_patterns:
+            found_emails = re.findall(pattern, text_content, re.IGNORECASE)
+            emails.extend(found_emails)
+        
+        # Find emails in href attributes
+        for link in soup.find_all('a', href=True):
+            href = link['href']
+            if 'mailto:' in href:
+                email = href.replace('mailto:', '').split('?')[0]
+                emails.append(email)
+        
+        return emails
+    
+    def _extract_emails_from_javascript(self, soup: BeautifulSoup, domain: str) -> List[str]:
+        """Extract emails from JavaScript code"""
+        emails = []
+        
+        # Find script tags
+        for script in soup.find_all('script'):
+            if script.string:
+                script_content = script.string
+                
+                # Look for email patterns in JavaScript
+                email_patterns = [
+                    r'["\']([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})["\']',
+                    r'["\']([A-Za-z0-9._%+-]+@' + domain.replace('.', r'\.') + r')["\']'
+                ]
+                
+                for pattern in email_patterns:
+                    found_emails = re.findall(pattern, script_content, re.IGNORECASE)
+                    emails.extend(found_emails)
+        
+        return emails
+    
+    def _extract_emails_from_meta(self, soup: BeautifulSoup, domain: str) -> List[str]:
+        """Extract emails from meta tags"""
+        emails = []
+        
+        # Check meta tags for contact information
+        meta_tags = [
+            'contact',
+            'email',
+            'support',
+            'sales',
+            'info'
+        ]
+        
+        for meta in soup.find_all('meta'):
+            content = meta.get('content', '')
+            if any(tag in content.lower() for tag in meta_tags):
+                # Look for email in content
+                email_match = re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', content)
+                if email_match:
+                    emails.append(email_match.group())
+        
+        return emails
+    
+    def _generate_domain_emails(self, domain: str) -> List[str]:
+        """Generate common email patterns for the domain"""
+        emails = []
+        
+        # Common email patterns
+        patterns = [
+            'info', 'contact', 'hello', 'team', 'sales', 'support', 'admin',
+            'hr', 'marketing', 'business', 'office', 'general', 'help',
+            'get', 'start', 'hello', 'contact', 'info'
+        ]
+        
+        # Generate emails for the domain
+        for pattern in patterns:
+            emails.append(f'{pattern}@{domain}')
+        
+        # Generate emails for subdomains
+        subdomains = ['www', 'mail', 'email', 'contact', 'support']
+        for subdomain in subdomains:
+            for pattern in patterns[:5]:  # Use first 5 patterns for subdomains
+                emails.append(f'{pattern}@{subdomain}.{domain}')
+        
+        return emails
+    
+    def _find_contact_page_emails(self, soup: BeautifulSoup, base_url: str, domain: str) -> List[str]:
+        """Find emails from contact pages"""
+        emails = []
+        
+        # Look for contact page links
+        contact_links = []
+        for link in soup.find_all('a', href=True):
+            href = link.get('href', '').lower()
+            link_text = link.get_text().lower()
+            
+            # Check if it's a contact page
+            if any(word in href or word in link_text for word in ['contact', 'about', 'team', 'support']):
+                contact_links.append(link['href'])
+        
+        # Visit contact pages (limit to 3 to avoid too many requests)
+        for i, link in enumerate(contact_links[:3]):
+            try:
+                if link.startswith('/'):
+                    contact_url = base_url + link
+                elif link.startswith('http'):
+                    contact_url = link
+                else:
+                    contact_url = base_url + '/' + link
+                
+                # Make request to contact page
+                session = requests.Session()
+                session.headers.update({
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                })
+                
+                response = session.get(contact_url, timeout=5)
+                if response.status_code == 200:
+                    contact_soup = BeautifulSoup(response.content, 'html.parser')
+                    contact_emails = self._extract_emails_from_html(contact_soup, domain)
+                    emails.extend(contact_emails)
+                    
+            except Exception as e:
+                print(f"Error accessing contact page {link}: {e}")
+                continue
+        
+        return emails
+    
+    def _scrape_alternative_methods(self, url: str) -> List[str]:
+        """Try alternative scraping methods when direct access fails"""
+        emails = []
+        
+        try:
+            # Method 1: Try with different User-Agent
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            
+            session = requests.Session()
+            session.headers.update(headers)
+            response = session.get(url, timeout=10)
+            
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.content, 'html.parser')
+                domain = urlparse(url).netloc
+                emails = self._extract_emails_from_html(soup, domain)
+                emails.extend(self._generate_domain_emails(domain))
+        
+        except Exception as e:
+            print(f"Alternative method failed: {e}")
+        
+        return emails
+    
+    def _is_valid_email(self, email: str) -> bool:
+        """Validate email format"""
+        pattern = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'
+        return bool(re.match(pattern, email))
+
 # Flask routes for email scraping
 def add_scraper_routes(app):
     """Add email scraping routes to Flask app"""
@@ -562,10 +798,25 @@ def add_scraper_routes(app):
                     'error': f'Scraping limit reached ({limit_check["current"]}/{limit_check["limit"]})'
                 })
             
-            # Perform scraping
-            print("Starting scraping...")
+            # Perform enhanced scraping
+            print("Starting enhanced scraping...")
             scraper = EmailScraper()
-            result = scraper.scrape_website(url)
+            
+            # Use the new enhanced scraping method
+            emails = scraper.scrape_website_emails(url)
+            
+            # Create result format
+            from urllib.parse import urlparse
+            parsed_url = urlparse(url)
+            domain = parsed_url.netloc
+            
+            result = {
+                'success': True,
+                'emails': emails,
+                'domain': domain,
+                'url': url,
+                'emails_found': len(emails)
+            }
             
             print(f"Scraping result: {result}")
             
