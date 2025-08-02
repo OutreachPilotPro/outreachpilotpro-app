@@ -366,7 +366,10 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Company Name</label>
-                    <input type="text" class="form-input" id="basic-company" placeholder="Acme Corporation">
+                    <input type="text" class="form-input" id="basic-company" placeholder="Start typing company name..." list="company-list">
+                    <datalist id="company-list">
+                        <!-- Will be populated with preloaded companies -->
+                    </datalist>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Industry</label>
@@ -377,11 +380,84 @@
                         <option value="finance">Finance</option>
                         <option value="retail">Retail</option>
                         <option value="manufacturing">Manufacturing</option>
+                        <option value="ecommerce">E-commerce</option>
+                        <option value="saas">SaaS & Software</option>
+                        <option value="real-estate">Real Estate</option>
+                        <option value="education">Education</option>
+                        <option value="consulting">Consulting</option>
+                        <option value="marketing">Marketing & Advertising</option>
+                        <option value="legal">Legal Services</option>
+                        <option value="restaurant">Restaurant & Food</option>
+                        <option value="fitness">Fitness & Wellness</option>
+                        <option value="beauty">Beauty & Personal Care</option>
+                        <option value="automotive">Automotive</option>
+                        <option value="travel">Travel & Tourism</option>
+                        <option value="nonprofit">Non-Profit</option>
+                        <option value="government">Government</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Location</label>
-                    <input type="text" class="form-input" id="basic-location" placeholder="New York, CA, etc.">
+                    <label class="form-label">State</label>
+                    <select class="form-select" id="basic-state">
+                        <option value="">Select State</option>
+                        <option value="AL">Alabama</option>
+                        <option value="AK">Alaska</option>
+                        <option value="AZ">Arizona</option>
+                        <option value="AR">Arkansas</option>
+                        <option value="CA">California</option>
+                        <option value="CO">Colorado</option>
+                        <option value="CT">Connecticut</option>
+                        <option value="DE">Delaware</option>
+                        <option value="FL">Florida</option>
+                        <option value="GA">Georgia</option>
+                        <option value="HI">Hawaii</option>
+                        <option value="ID">Idaho</option>
+                        <option value="IL">Illinois</option>
+                        <option value="IN">Indiana</option>
+                        <option value="IA">Iowa</option>
+                        <option value="KS">Kansas</option>
+                        <option value="KY">Kentucky</option>
+                        <option value="LA">Louisiana</option>
+                        <option value="ME">Maine</option>
+                        <option value="MD">Maryland</option>
+                        <option value="MA">Massachusetts</option>
+                        <option value="MI">Michigan</option>
+                        <option value="MN">Minnesota</option>
+                        <option value="MS">Mississippi</option>
+                        <option value="MO">Missouri</option>
+                        <option value="MT">Montana</option>
+                        <option value="NE">Nebraska</option>
+                        <option value="NV">Nevada</option>
+                        <option value="NH">New Hampshire</option>
+                        <option value="NJ">New Jersey</option>
+                        <option value="NM">New Mexico</option>
+                        <option value="NY">New York</option>
+                        <option value="NC">North Carolina</option>
+                        <option value="ND">North Dakota</option>
+                        <option value="OH">Ohio</option>
+                        <option value="OK">Oklahoma</option>
+                        <option value="OR">Oregon</option>
+                        <option value="PA">Pennsylvania</option>
+                        <option value="RI">Rhode Island</option>
+                        <option value="SC">South Carolina</option>
+                        <option value="SD">South Dakota</option>
+                        <option value="TN">Tennessee</option>
+                        <option value="TX">Texas</option>
+                        <option value="UT">Utah</option>
+                        <option value="VT">Vermont</option>
+                        <option value="VA">Virginia</option>
+                        <option value="WA">Washington</option>
+                        <option value="WV">West Virginia</option>
+                        <option value="WI">Wisconsin</option>
+                        <option value="WY">Wyoming</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">City</label>
+                    <select class="form-select" id="basic-city">
+                        <option value="">Select City</option>
+                        <!-- Will be populated based on state selection -->
+                    </select>
                 </div>
             </div>
             <button class="submit-btn" onclick="basicSearch()">🔍 Search Emails</button>
@@ -636,6 +712,9 @@ Global Solutions LLC"></textarea>
                 <div class="results-title">Found Emails</div>
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <div class="results-count" id="results-count">0 emails</div>
+                    <button id="organize-btn" class="submit-btn" style="display: none;" onclick="showOrganizationPanel()">
+                        📊 Organize Results
+                    </button>
                     <button id="create-campaign-btn" class="submit-btn" style="display: none;" onclick="createCampaign()">
                         📧 Create Campaign
                     </button>
@@ -644,6 +723,82 @@ Global Solutions LLC"></textarea>
                     </button>
                 </div>
             </div>
+            
+            <!-- Organization Panel -->
+            <div id="organization-panel" style="display: none; margin-bottom: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 10px;">
+                <h3 style="margin-bottom: 1rem;">Organize & Filter Results</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Filter by Company Size</label>
+                        <select class="form-select" id="filter-size">
+                            <option value="">All Sizes</option>
+                            <option value="startup">Startup (1-50)</option>
+                            <option value="small">Small (51-200)</option>
+                            <option value="medium">Medium (201-1000)</option>
+                            <option value="large">Large (1000+)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Filter by Revenue</label>
+                        <select class="form-select" id="filter-revenue">
+                            <option value="">All Revenue</option>
+                            <option value="under-1m">Under $1M</option>
+                            <option value="1m-10m">$1M - $10M</option>
+                            <option value="10m-50m">$10M - $50M</option>
+                            <option value="50m-100m">$50M - $100M</option>
+                            <option value="over-100m">Over $100M</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Filter by Location</label>
+                        <select class="form-select" id="filter-location">
+                            <option value="">All Locations</option>
+                            <!-- Will be populated dynamically -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Sort By</label>
+                        <select class="form-select" id="sort-by">
+                            <option value="company">Company Name</option>
+                            <option value="size">Company Size</option>
+                            <option value="revenue">Revenue</option>
+                            <option value="location">Location</option>
+                            <option value="industry">Industry</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <button class="submit-btn" onclick="applyFilters()">🔍 Apply Filters</button>
+                    <button class="submit-btn" style="background: #6c757d;" onclick="clearFilters()">🗑️ Clear Filters</button>
+                    <button class="submit-btn" style="background: #28a745;" onclick="selectAllEmails()">✅ Select All</button>
+                    <button class="submit-btn" style="background: #dc3545;" onclick="deselectAllEmails()">❌ Deselect All</button>
+                </div>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">Save List As</label>
+                        <input type="text" class="form-input" id="save-list-name" placeholder="Enter list name (e.g., 'Tech Companies NYC')">
+                    </div>
+                    <button class="submit-btn" style="background: #17a2b8;" onclick="saveEmailList()">💾 Save List</button>
+                </div>
+            </div>
+            
+            <!-- Results Summary -->
+            <div id="results-summary" style="display: none; margin-bottom: 1rem; padding: 1rem; background: #e9ecef; border-radius: 8px;">
+                <h4 style="margin-bottom: 0.5rem;">Results Summary</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; font-size: 0.9rem;">
+                    <div><strong>Total Companies:</strong> <span id="summary-companies">0</span></div>
+                    <div><strong>Total Emails:</strong> <span id="summary-emails">0</span></div>
+                    <div><strong>Selected:</strong> <span id="summary-selected">0</span></div>
+                    <div><strong>Avg Company Size:</strong> <span id="summary-avg-size">-</span></div>
+                </div>
+            </div>
+            
             <div class="email-list" id="email-list">
                 <!-- Results will be populated here -->
             </div>
@@ -841,28 +996,40 @@ Global Solutions LLC"></textarea>
             const resultsCount = document.getElementById('results-count');
             const createCampaignBtn = document.getElementById('create-campaign-btn');
             const exportBtn = document.getElementById('export-btn');
+            const organizeBtn = document.getElementById('organize-btn');
             
             if (result.success && result.emails && result.emails.length > 0) {
                 resultsCount.textContent = `${result.emails.length} emails`;
                 createCampaignBtn.style.display = 'inline-block';
                 exportBtn.style.display = 'inline-block';
+                organizeBtn.style.display = 'inline-block';
                 
-                emailList.innerHTML = result.emails.map(email => `
-                    <div class="email-item">
-                        <div class="email-info">
-                            <div class="email-address">${email}</div>
-                            <div class="email-domain">${email.split('@')[1]}</div>
-                        </div>
-                        <div class="email-actions">
-                            <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
-                            <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
-                        </div>
-                    </div>
-                `).join('');
+                // Convert emails to structured data with company information
+                currentResults = result.emails.map(email => {
+                    const domain = email.split('@')[1];
+                    return {
+                        email: email,
+                        domain: domain,
+                        company_name: domain.split('.')[0].replace(/[0-9]/g, '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                        industry: result.industry || 'Unknown',
+                        company_size: 'Unknown',
+                        revenue: 'Unknown',
+                        location: result.location || 'Unknown',
+                        employees: 'Unknown'
+                    };
+                });
+                
+                filteredResults = [...currentResults];
+                selectedEmails.clear();
+                
+                // Display organized results
+                displayFilteredResults();
+                
             } else {
                 resultsCount.textContent = '0 emails';
                 createCampaignBtn.style.display = 'none';
                 exportBtn.style.display = 'none';
+                organizeBtn.style.display = 'none';
                 emailList.innerHTML = `
                     <div class="loading">
                         <p>No emails found. Try different search criteria.</p>
@@ -985,6 +1152,309 @@ Global Solutions LLC"></textarea>
             }, 2000);
         }
 
+        // Global variables for results management
+        let currentResults = [];
+        let filteredResults = [];
+        let selectedEmails = new Set();
+        
+        // Preloaded company data
+        const preloadedCompanies = [
+            'OutreachPilotPro', 'Google', 'Microsoft', 'Apple', 'Amazon', 'Meta', 'Netflix', 'Salesforce', 'Adobe', 'Oracle',
+            'IBM', 'Slack', 'Zoom', 'Dropbox', 'Box', 'Asana', 'Trello', 'Notion', 'Figma', 'Canva', 'HubSpot', 'Stripe',
+            'Airbnb', 'Uber', 'Lyft', 'DoorDash', 'Instacart', 'Robinhood', 'Coinbase', 'Plaid', 'Discord', 'OpenAI',
+            'Anthropic', 'Databricks', 'Snowflake', 'Palantir', 'UiPath', 'C3.ai', 'Scale AI', 'Hugging Face',
+            'TechCorp Solutions', 'EcoTech Innovations', 'SaaSFlow Inc', 'DataViz Pro', 'CloudSecure Solutions',
+            'FashionForward', 'GreenHome Store', 'TechGadgets Pro', 'PetParadise', 'SportsElite',
+            'Wellness Medical Group', 'Mental Health Partners', 'DentalCare Plus', 'PharmaInnovate', 'MedDevice Solutions',
+            'Green Finance Bank', 'FinTech Innovations', 'Investment Partners LLC', 'Secure Insurance Co', 'Credit Union First'
+        ];
+        
+        // Preloaded cities by state
+        const citiesByState = {
+            'CA': ['Los Angeles', 'San Francisco', 'San Diego', 'San Jose', 'Sacramento', 'Oakland', 'Fresno', 'Long Beach'],
+            'NY': ['New York City', 'Buffalo', 'Rochester', 'Yonkers', 'Syracuse', 'Albany', 'New Rochelle'],
+            'TX': ['Houston', 'San Antonio', 'Dallas', 'Austin', 'Fort Worth', 'El Paso', 'Arlington', 'Corpus Christi'],
+            'FL': ['Jacksonville', 'Miami', 'Tampa', 'Orlando', 'St. Petersburg', 'Hialeah', 'Tallahassee', 'Fort Lauderdale'],
+            'IL': ['Chicago', 'Aurora', 'Rockford', 'Joliet', 'Naperville', 'Springfield', 'Peoria', 'Elgin'],
+            'PA': ['Philadelphia', 'Pittsburgh', 'Allentown', 'Erie', 'Reading', 'Scranton', 'Bethlehem', 'Lancaster'],
+            'OH': ['Columbus', 'Cleveland', 'Cincinnati', 'Toledo', 'Akron', 'Dayton', 'Parma', 'Canton'],
+            'GA': ['Atlanta', 'Augusta', 'Columbus', 'Macon', 'Savannah', 'Athens', 'Sandy Springs', 'Roswell'],
+            'NC': ['Charlotte', 'Raleigh', 'Greensboro', 'Durham', 'Winston-Salem', 'Fayetteville', 'Cary', 'Wilmington'],
+            'MI': ['Detroit', 'Grand Rapids', 'Warren', 'Sterling Heights', 'Lansing', 'Ann Arbor', 'Flint', 'Dearborn']
+        };
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            populateCompanyList();
+            setupStateCityMapping();
+        });
+        
+        // Populate company datalist
+        function populateCompanyList() {
+            const companyList = document.getElementById('company-list');
+            preloadedCompanies.forEach(company => {
+                const option = document.createElement('option');
+                option.value = company;
+                companyList.appendChild(option);
+            });
+        }
+        
+        // Setup state-city mapping
+        function setupStateCityMapping() {
+            const stateSelect = document.getElementById('basic-state');
+            const citySelect = document.getElementById('basic-city');
+            
+            stateSelect.addEventListener('change', function() {
+                const selectedState = this.value;
+                citySelect.innerHTML = '<option value="">Select City</option>';
+                
+                if (citiesByState[selectedState]) {
+                    citiesByState[selectedState].forEach(city => {
+                        const option = document.createElement('option');
+                        option.value = city;
+                        option.textContent = city;
+                        citySelect.appendChild(option);
+                    });
+                }
+            });
+        }
+        
+        // Organization functions
+        function showOrganizationPanel() {
+            const panel = document.getElementById('organization-panel');
+            const summary = document.getElementById('results-summary');
+            panel.style.display = 'block';
+            summary.style.display = 'block';
+            updateResultsSummary();
+        }
+        
+        function applyFilters() {
+            const sizeFilter = document.getElementById('filter-size').value;
+            const revenueFilter = document.getElementById('filter-revenue').value;
+            const locationFilter = document.getElementById('filter-location').value;
+            const sortBy = document.getElementById('sort-by').value;
+            
+            filteredResults = currentResults.filter(item => {
+                let matches = true;
+                
+                if (sizeFilter && item.company_size !== sizeFilter) matches = false;
+                if (revenueFilter && item.revenue !== revenueFilter) matches = false;
+                if (locationFilter && item.location !== locationFilter) matches = false;
+                
+                return matches;
+            });
+            
+            // Sort results
+            filteredResults.sort((a, b) => {
+                switch(sortBy) {
+                    case 'company': return a.company_name.localeCompare(b.company_name);
+                    case 'size': return getSizeValue(a.company_size) - getSizeValue(b.company_size);
+                    case 'revenue': return getRevenueValue(a.revenue) - getRevenueValue(b.revenue);
+                    case 'location': return a.location.localeCompare(b.location);
+                    case 'industry': return a.industry.localeCompare(b.industry);
+                    default: return 0;
+                }
+            });
+            
+            displayFilteredResults();
+            updateResultsSummary();
+        }
+        
+        function clearFilters() {
+            document.getElementById('filter-size').value = '';
+            document.getElementById('filter-revenue').value = '';
+            document.getElementById('filter-location').value = '';
+            document.getElementById('sort-by').value = 'company';
+            
+            filteredResults = [...currentResults];
+            displayFilteredResults();
+            updateResultsSummary();
+        }
+        
+        function selectAllEmails() {
+            selectedEmails.clear();
+            filteredResults.forEach(item => {
+                selectedEmails.add(item.email);
+            });
+            displayFilteredResults();
+            updateResultsSummary();
+        }
+        
+        function deselectAllEmails() {
+            selectedEmails.clear();
+            displayFilteredResults();
+            updateResultsSummary();
+        }
+        
+        function saveEmailList() {
+            const listName = document.getElementById('save-list-name').value;
+            if (!listName.trim()) {
+                alert('Please enter a list name');
+                return;
+            }
+            
+            const selectedEmailsList = Array.from(selectedEmails);
+            if (selectedEmailsList.length === 0) {
+                alert('Please select emails to save');
+                return;
+            }
+            
+            // Save to localStorage for now (in production, save to database)
+            const savedLists = JSON.parse(localStorage.getItem('savedEmailLists') || '{}');
+            savedLists[listName] = {
+                emails: selectedEmailsList,
+                count: selectedEmailsList.length,
+                created: new Date().toISOString(),
+                companies: filteredResults.filter(item => selectedEmails.has(item.email))
+            };
+            localStorage.setItem('savedEmailLists', JSON.stringify(savedLists));
+            
+            alert(`List "${listName}" saved with ${selectedEmailsList.length} emails!`);
+        }
+        
+        function displayFilteredResults() {
+            const emailList = document.getElementById('email-list');
+            
+            if (filteredResults.length === 0) {
+                emailList.innerHTML = '<div class="loading"><p>No results match your filters.</p></div>';
+                return;
+            }
+            
+            // Group by company
+            const companies = {};
+            filteredResults.forEach(item => {
+                if (!companies[item.company_name]) {
+                    companies[item.company_name] = {
+                        name: item.company_name,
+                        domain: item.domain,
+                        industry: item.industry,
+                        size: item.company_size,
+                        revenue: item.revenue,
+                        location: item.location,
+                        employees: item.employees,
+                        emails: []
+                    };
+                }
+                companies[item.company_name].emails.push(item.email);
+            });
+            
+            let html = '';
+            Object.values(companies).forEach(company => {
+                const isSelected = company.emails.every(email => selectedEmails.has(email));
+                const selectedCount = company.emails.filter(email => selectedEmails.has(email)).length;
+                
+                html += `
+                    <div class="company-group" style="margin-bottom: 2rem; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+                        <div class="company-header" style="background: #f8f9fa; padding: 1rem; border-bottom: 1px solid #e0e0e0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h4 style="margin: 0 0 0.5rem 0;">${company.name}</h4>
+                                    <div style="display: flex; gap: 1rem; font-size: 0.9rem; color: #666;">
+                                        <span><strong>Industry:</strong> ${company.industry || 'Unknown'}</span>
+                                        <span><strong>Size:</strong> ${company.size || 'Unknown'}</span>
+                                        <span><strong>Revenue:</strong> ${company.revenue || 'Unknown'}</span>
+                                        <span><strong>Location:</strong> ${company.location || 'Unknown'}</span>
+                                        <span><strong>Employees:</strong> ${company.employees || 'Unknown'}</span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="checkbox" ${isSelected ? 'checked' : ''} 
+                                               onchange="toggleCompanySelection('${company.name}')" style="margin: 0;">
+                                        <span>Select All (${company.emails.length})</span>
+                                    </label>
+                                    <span style="color: #666;">${selectedCount}/${company.emails.length} selected</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="company-emails">
+                            ${company.emails.map(email => `
+                                <div class="email-item" style="padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;">
+                                    <div class="email-info">
+                                        <div class="email-address">${email}</div>
+                                        <div class="email-domain">${email.split('@')[1]}</div>
+                                    </div>
+                                    <div class="email-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <input type="checkbox" ${selectedEmails.has(email) ? 'checked' : ''} 
+                                                   onchange="toggleEmailSelection('${email}')" style="margin: 0;">
+                                            <span>Select</span>
+                                        </label>
+                                        <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
+                                        <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            emailList.innerHTML = html;
+        }
+        
+        function toggleCompanySelection(companyName) {
+            const company = filteredResults.filter(item => item.company_name === companyName);
+            const companyEmails = company.map(item => item.email);
+            const allSelected = companyEmails.every(email => selectedEmails.has(email));
+            
+            if (allSelected) {
+                companyEmails.forEach(email => selectedEmails.delete(email));
+            } else {
+                companyEmails.forEach(email => selectedEmails.add(email));
+            }
+            
+            displayFilteredResults();
+            updateResultsSummary();
+        }
+        
+        function toggleEmailSelection(email) {
+            if (selectedEmails.has(email)) {
+                selectedEmails.delete(email);
+            } else {
+                selectedEmails.add(email);
+            }
+            
+            displayFilteredResults();
+            updateResultsSummary();
+        }
+        
+        function updateResultsSummary() {
+            const companies = new Set(filteredResults.map(item => item.company_name));
+            const emails = filteredResults.length;
+            const selected = selectedEmails.size;
+            
+            // Calculate average company size
+            const sizeValues = filteredResults.map(item => getSizeValue(item.company_size)).filter(val => val > 0);
+            const avgSize = sizeValues.length > 0 ? Math.round(sizeValues.reduce((a, b) => a + b, 0) / sizeValues.length) : 0;
+            
+            document.getElementById('summary-companies').textContent = companies.size;
+            document.getElementById('summary-emails').textContent = emails;
+            document.getElementById('summary-selected').textContent = selected;
+            document.getElementById('summary-avg-size').textContent = avgSize > 0 ? `${avgSize} employees` : 'Unknown';
+        }
+        
+        function getSizeValue(size) {
+            const sizeMap = {
+                'startup': 25,
+                'small': 125,
+                'medium': 600,
+                'large': 2000
+            };
+            return sizeMap[size] || 0;
+        }
+        
+        function getRevenueValue(revenue) {
+            const revenueMap = {
+                'under-1m': 500000,
+                '1m-10m': 5500000,
+                '10m-50m': 30000000,
+                '50m-100m': 75000000,
+                'over-100m': 200000000
+            };
+            return revenueMap[revenue] || 0;
+        }
+        
         // Populate subcategories based on industry
         document.getElementById('advanced-industry').addEventListener('change', function() {
             const industry = this.value;
