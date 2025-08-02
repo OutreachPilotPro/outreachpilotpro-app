@@ -72,130 +72,301 @@ class InfiniteEmailDatabase:
         }
     
     def init_database(self):
-        """Initialize database with tables for infinite email storage"""
-        conn = sqlite3.connect(self.db_path)
+        """Initialize the database with sample data"""
+        print("Initializing email database...")
+        
+        # Load comprehensive company data
+        self._load_tech_companies()
+        self._load_ecommerce_companies()
+        self._load_healthcare_companies()
+        self._load_finance_companies()
+        self._load_restaurant_companies()
+        self._load_fitness_companies()
+        
+        # Load additional industry data
+        self._load_pharma_companies()
+        self._load_bank_companies()
+        self._load_vc_companies()
+        self._load_healthcare_systems()
+        self._load_investment_firms()
+        
+        print("Email database initialized successfully!")
+    
+    def _load_tech_companies(self):
+        """Load technology companies with detailed targeting data"""
+        companies = [
+            {
+                'name': 'TechCorp Solutions',
+                'domain': 'techcorp.com',
+                'industry': 'technology',
+                'subcategory': 'software-development',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'San Francisco, CA',
+                'technology': ['python', 'aws', 'slack', 'github'],
+                'job_titles': ['cto', 'software-engineer', 'product-manager'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['women-owned']
+            },
+            {
+                'name': 'EcoTech Innovations',
+                'domain': 'ecotech.com',
+                'industry': 'technology',
+                'subcategory': 'clean-tech',
+                'size': 'small',
+                'revenue': '1m-10m',
+                'location': 'Austin, TX',
+                'technology': ['solar', 'iot', 'machine-learning'],
+                'job_titles': ['ceo', 'cto', 'sustainability-manager'],
+                'environmental': 'carbon-neutral',
+                'social_impact': ['b-corp']
+            },
+            {
+                'name': 'SaaSFlow Inc',
+                'domain': 'saasflow.com',
+                'industry': 'saas',
+                'subcategory': 'project-management',
+                'size': 'large',
+                'revenue': '50m-100m',
+                'location': 'New York, NY',
+                'technology': ['react', 'nodejs', 'mongodb', 'stripe'],
+                'job_titles': ['ceo', 'cto', 'cmo', 'sales-director'],
+                'environmental': 'sustainable',
+                'social_impact': ['lgbtq-friendly']
+            }
+        ]
+        
+        for company in companies:
+            self._add_company_to_database(company)
+    
+    def _load_ecommerce_companies(self):
+        """Load e-commerce companies with detailed targeting data"""
+        companies = [
+            {
+                'name': 'FashionForward',
+                'domain': 'fashionforward.com',
+                'industry': 'ecommerce',
+                'subcategory': 'fashion-apparel',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'Los Angeles, CA',
+                'technology': ['shopify', 'mailchimp', 'google-ads'],
+                'job_titles': ['ceo', 'cmo', 'ecommerce-manager'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['women-owned', 'fair-trade']
+            },
+            {
+                'name': 'GreenHome Store',
+                'domain': 'greenhome.com',
+                'industry': 'ecommerce',
+                'subcategory': 'home-garden',
+                'size': 'small',
+                'revenue': '1m-10m',
+                'location': 'Portland, OR',
+                'technology': ['woocommerce', 'wordpress', 'paypal'],
+                'job_titles': ['founder', 'marketing-director'],
+                'environmental': 'organic',
+                'social_impact': ['b-corp', 'carbon-neutral']
+            },
+            {
+                'name': 'TechGadgets Pro',
+                'domain': 'techgadgetspro.com',
+                'industry': 'ecommerce',
+                'subcategory': 'electronics',
+                'size': 'large',
+                'revenue': 'over-100m',
+                'location': 'Seattle, WA',
+                'technology': ['magento', 'salesforce', 'hubspot'],
+                'job_titles': ['ceo', 'cto', 'operations-manager'],
+                'environmental': 'recycling',
+                'social_impact': ['veteran-owned']
+            }
+        ]
+        
+        for company in companies:
+            self._add_company_to_database(company)
+    
+    def _load_healthcare_companies(self):
+        """Load healthcare companies with detailed targeting data"""
+        companies = [
+            {
+                'name': 'Wellness Medical Group',
+                'domain': 'wellnessmedical.com',
+                'industry': 'healthcare',
+                'subcategory': 'primary-care',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'Boston, MA',
+                'technology': ['epic', 'zoom', 'microsoft'],
+                'job_titles': ['medical-director', 'hr-director'],
+                'environmental': 'sustainable',
+                'social_impact': ['disability-friendly']
+            },
+            {
+                'name': 'Mental Health Partners',
+                'domain': 'mentalhealthpartners.com',
+                'industry': 'healthcare',
+                'subcategory': 'mental-health',
+                'size': 'small',
+                'revenue': '1m-10m',
+                'location': 'Denver, CO',
+                'technology': ['telemedicine', 'slack', 'quickbooks'],
+                'job_titles': ['clinical-director', 'operations-manager'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['lgbtq-friendly']
+            }
+        ]
+        
+        for company in companies:
+            self._add_company_to_database(company)
+    
+    def _load_finance_companies(self):
+        """Load finance companies with detailed targeting data"""
+        companies = [
+            {
+                'name': 'Green Finance Bank',
+                'domain': 'greenfinance.com',
+                'industry': 'finance',
+                'subcategory': 'commercial-banking',
+                'size': 'large',
+                'revenue': 'over-100m',
+                'location': 'San Francisco, CA',
+                'technology': ['salesforce', 'quickbooks', 'microsoft'],
+                'job_titles': ['ceo', 'cfo', 'compliance-director'],
+                'environmental': 'carbon-neutral',
+                'social_impact': ['b-corp', 'minority-owned']
+            },
+            {
+                'name': 'FinTech Innovations',
+                'domain': 'fintechinnovations.com',
+                'industry': 'finance',
+                'subcategory': 'fintech',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'New York, NY',
+                'technology': ['blockchain', 'ai', 'aws'],
+                'job_titles': ['ceo', 'cto', 'product-manager'],
+                'environmental': 'sustainable',
+                'social_impact': ['women-owned']
+            }
+        ]
+        
+        for company in companies:
+            self._add_company_to_database(company)
+    
+    def _load_restaurant_companies(self):
+        """Load restaurant companies with detailed targeting data"""
+        companies = [
+            {
+                'name': 'Organic Bistro',
+                'domain': 'organicbistro.com',
+                'industry': 'restaurant',
+                'subcategory': 'fine-dining',
+                'size': 'small',
+                'revenue': '1m-10m',
+                'location': 'Portland, OR',
+                'technology': ['square', 'toast', 'quickbooks'],
+                'job_titles': ['owner', 'chef', 'operations-manager'],
+                'environmental': 'organic',
+                'social_impact': ['farm-to-table', 'local-sourcing']
+            },
+            {
+                'name': 'Vegan Delights',
+                'domain': 'vegandelights.com',
+                'industry': 'restaurant',
+                'subcategory': 'casual-dining',
+                'size': 'medium',
+                'revenue': '1m-10m',
+                'location': 'Austin, TX',
+                'technology': ['clover', 'mailchimp', 'google-ads'],
+                'job_titles': ['founder', 'marketing-director'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['lgbtq-friendly', 'animal-welfare']
+            }
+        ]
+        
+        for company in companies:
+            self._add_company_to_database(company)
+    
+    def _load_fitness_companies(self):
+        """Load fitness companies with detailed targeting data"""
+        companies = [
+            {
+                'name': 'Wellness Warriors',
+                'domain': 'wellnesswarriors.com',
+                'industry': 'fitness',
+                'subcategory': 'yoga-studios',
+                'size': 'small',
+                'revenue': 'under-1m',
+                'location': 'Boulder, CO',
+                'technology': ['mindbody', 'mailchimp', 'instagram'],
+                'job_titles': ['owner', 'yoga-director'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['women-owned', 'lgbtq-friendly']
+            },
+            {
+                'name': 'CrossFit Elite',
+                'domain': 'crossfitelite.com',
+                'industry': 'fitness',
+                'subcategory': 'crossfit',
+                'size': 'small',
+                'revenue': '1m-10m',
+                'location': 'Miami, FL',
+                'technology': ['zenplanner', 'facebook-ads', 'quickbooks'],
+                'job_titles': ['owner', 'head-trainer'],
+                'environmental': 'sustainable',
+                'social_impact': ['veteran-owned']
+            }
+        ]
+        
+        for company in companies:
+            self._add_company_to_database(company)
+    
+    def _add_company_to_database(self, company):
+        """Add a company with detailed targeting data to the database"""
+        conn = sqlite3.connect("outreachpilot.db")
         c = conn.cursor()
         
-        # Main email database
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS email_database (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email TEXT UNIQUE NOT NULL,
-                first_name TEXT,
-                last_name TEXT,
-                company_name TEXT,
-                job_title TEXT,
-                industry TEXT,
-                location TEXT,
-                source TEXT,
-                verified BOOLEAN DEFAULT 0,
-                confidence_score REAL DEFAULT 0.0,
-                last_verified TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Company database
+        # Create company_database table if it doesn't exist
         c.execute("""
             CREATE TABLE IF NOT EXISTS company_database (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                company_name TEXT UNIQUE NOT NULL,
-                domain TEXT,
+                name TEXT NOT NULL,
+                domain TEXT NOT NULL,
                 industry TEXT,
+                subcategory TEXT,
                 size TEXT,
+                revenue TEXT,
                 location TEXT,
-                website TEXT,
-                linkedin_url TEXT,
-                employee_count INTEGER,
-                founded_year INTEGER,
-                revenue_range TEXT,
-                source TEXT,
-                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Email patterns database
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS email_patterns (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                company_name TEXT,
-                domain TEXT,
-                pattern_type TEXT,
-                pattern TEXT,
-                success_rate REAL DEFAULT 0.0,
-                sample_emails TEXT,
+                technology TEXT,
+                job_titles TEXT,
+                environmental TEXT,
+                social_impact TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         
-        # Data source tracking
+        # Insert company data
         c.execute("""
-            CREATE TABLE IF NOT EXISTS data_sources (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                source_name TEXT UNIQUE NOT NULL,
-                source_type TEXT,
-                api_endpoint TEXT,
-                rate_limit INTEGER,
-                last_used TIMESTAMP,
-                success_count INTEGER DEFAULT 0,
-                error_count INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+            INSERT OR REPLACE INTO company_database 
+            (name, domain, industry, subcategory, size, revenue, location, technology, job_titles, environmental, social_impact)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            company['name'],
+            company['domain'],
+            company.get('industry', ''),
+            company.get('subcategory', ''),
+            company.get('size', ''),
+            company.get('revenue', ''),
+            company.get('location', ''),
+            json.dumps(company.get('technology', [])),
+            json.dumps(company.get('job_titles', [])),
+            company.get('environmental', ''),
+            json.dumps(company.get('social_impact', []))
+        ))
         
         conn.commit()
         conn.close()
-    
-    def _load_tech_companies(self) -> List[Dict]:
-        """Load technology companies from multiple sources"""
-        return [
-            # Major Tech Companies
-            {'name': 'Google', 'domain': 'google.com', 'size': 'large'},
-            {'name': 'Microsoft', 'domain': 'microsoft.com', 'size': 'large'},
-            {'name': 'Apple', 'domain': 'apple.com', 'size': 'large'},
-            {'name': 'Amazon', 'domain': 'amazon.com', 'size': 'large'},
-            {'name': 'Meta', 'domain': 'meta.com', 'size': 'large'},
-            {'name': 'Netflix', 'domain': 'netflix.com', 'size': 'large'},
-            {'name': 'Salesforce', 'domain': 'salesforce.com', 'size': 'large'},
-            {'name': 'Adobe', 'domain': 'adobe.com', 'size': 'large'},
-            {'name': 'Oracle', 'domain': 'oracle.com', 'size': 'large'},
-            {'name': 'IBM', 'domain': 'ibm.com', 'size': 'large'},
-            
-            # SaaS Companies
-            {'name': 'Slack', 'domain': 'slack.com', 'size': 'medium'},
-            {'name': 'Zoom', 'domain': 'zoom.us', 'size': 'medium'},
-            {'name': 'Dropbox', 'domain': 'dropbox.com', 'size': 'medium'},
-            {'name': 'Box', 'domain': 'box.com', 'size': 'medium'},
-            {'name': 'Asana', 'domain': 'asana.com', 'size': 'medium'},
-            {'name': 'Trello', 'domain': 'trello.com', 'size': 'medium'},
-            {'name': 'Notion', 'domain': 'notion.so', 'size': 'medium'},
-            {'name': 'Figma', 'domain': 'figma.com', 'size': 'medium'},
-            {'name': 'Canva', 'domain': 'canva.com', 'size': 'medium'},
-            {'name': 'HubSpot', 'domain': 'hubspot.com', 'size': 'medium'},
-            
-            # Startups
-            {'name': 'Stripe', 'domain': 'stripe.com', 'size': 'medium'},
-            {'name': 'Airbnb', 'domain': 'airbnb.com', 'size': 'large'},
-            {'name': 'Uber', 'domain': 'uber.com', 'size': 'large'},
-            {'name': 'Lyft', 'domain': 'lyft.com', 'size': 'medium'},
-            {'name': 'DoorDash', 'domain': 'doordash.com', 'size': 'medium'},
-            {'name': 'Instacart', 'domain': 'instacart.com', 'size': 'medium'},
-            {'name': 'Robinhood', 'domain': 'robinhood.com', 'size': 'medium'},
-            {'name': 'Coinbase', 'domain': 'coinbase.com', 'size': 'medium'},
-            {'name': 'Plaid', 'domain': 'plaid.com', 'size': 'medium'},
-            {'name': 'Discord', 'domain': 'discord.com', 'size': 'medium'},
-            
-            # AI/ML Companies
-            {'name': 'OpenAI', 'domain': 'openai.com', 'size': 'medium'},
-            {'name': 'Anthropic', 'domain': 'anthropic.com', 'size': 'medium'},
-            {'name': 'Databricks', 'domain': 'databricks.com', 'size': 'medium'},
-            {'name': 'Snowflake', 'domain': 'snowflake.com', 'size': 'medium'},
-            {'name': 'Palantir', 'domain': 'palantir.com', 'size': 'medium'},
-            {'name': 'UiPath', 'domain': 'uipath.com', 'size': 'medium'},
-            {'name': 'C3.ai', 'domain': 'c3.ai', 'size': 'medium'},
-            {'name': 'Scale AI', 'domain': 'scale.com', 'size': 'medium'},
-            {'name': 'Hugging Face', 'domain': 'huggingface.co', 'size': 'medium'}
-        ]
     
     def _load_pharma_companies(self) -> List[Dict]:
         """Load pharmaceutical companies"""

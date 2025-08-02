@@ -201,8 +201,13 @@ def dashboard():
 def scrape_page():
     if 'user' not in session:
         return redirect(url_for('login'))
-    
-    return render_template("scrape.html", user=session['user'])
+    return render_template("scrape_enhanced.html", user=session['user'])
+
+@app.route("/scrape-enhanced")
+def scrape_enhanced_page():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    return render_template("scrape_enhanced.html", user=session['user'])
 
 @app.route("/campaigns")
 def campaigns_page():
@@ -460,6 +465,83 @@ def search_infinite_emails():
         
     except Exception as e:
         print(f"Error in infinite search: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route("/api/search/advanced", methods=['POST'])
+def advanced_search():
+    """Advanced search with comprehensive targeting options"""
+    print("Advanced search API called")
+    
+    if 'user' not in session:
+        print("User not authenticated")
+        return jsonify({'success': False, 'error': 'Not authenticated'})
+    
+    user_id = session['user']['id']
+    print(f"User ID: {user_id}")
+    
+    try:
+        data = request.get_json()
+        print(f"Advanced search data: {data}")
+        
+        industry = data.get('industry')
+        subcategory = data.get('subcategory')
+        size = data.get('size')
+        revenue = data.get('revenue')
+        location = data.get('location')
+        titles = data.get('titles', [])
+        tech = data.get('tech', [])
+        social = data.get('social', [])
+        environmental = data.get('environmental')
+        
+        # Use the infinite email database with advanced filters
+        if infinite_email_db is None:
+            return jsonify({'success': False, 'error': 'Email database not available'})
+        
+        # Create a comprehensive search query
+        search_params = {
+            'industry': industry,
+            'subcategory': subcategory,
+            'location': location,
+            'company_size': size,
+            'limit': 1000  # Default limit for advanced search
+        }
+        
+        # Add additional filters
+        if revenue:
+            search_params['revenue'] = revenue
+        if titles:
+            search_params['job_titles'] = titles
+        if tech:
+            search_params['technology'] = tech
+        if social:
+            search_params['social_impact'] = social
+        if environmental:
+            search_params['environmental'] = environmental
+        
+        print(f"Searching with params: {search_params}")
+        
+        # Perform the search
+        result = infinite_email_db.search_infinite_emails(**search_params)
+        
+        if result and result.get('emails'):
+            return jsonify({
+                'success': True,
+                'emails': result['emails'],
+                'emails_found': result.get('emails_found', len(result['emails'])),
+                'emails_returned': len(result['emails']),
+                'sources_used': result.get('sources_used', ['Advanced Database']),
+                'search_criteria': search_params,
+                'note': f"Advanced search with {len(search_params)} targeting filters"
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'No emails found with the specified criteria',
+                'search_criteria': search_params
+            })
+            
+    except Exception as e:
+        print(f"Error in advanced search: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 # Helper functions

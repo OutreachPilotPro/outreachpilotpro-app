@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Email Finder - OutreachPilotPro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #388E3C;
+            --secondary: #2196F3;
+            --accent: #FF9800;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --danger: #F44336;
+            --dark: #212121;
+            --light: #f5f5f5;
+            --gradient: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+            --gradient-premium: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .page-header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .search-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab-btn {
+            padding: 1rem 2rem;
+            border: none;
+            background: #f8f9fa;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn.active {
+            background: var(--gradient);
+            color: white;
+        }
+        
+        .tab-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .search-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-input, .form-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .submit-btn {
+            background: var(--gradient);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            width: 100%;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .submit-btn.premium {
+            background: var(--gradient-premium);
+        }
+        
+        .results-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .results-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .results-count {
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .email-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .email-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s ease;
+        }
+        
+        .email-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .email-info {
+            flex: 1;
+        }
+        
+        .email-address {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+        
+        .email-domain {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .email-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .copy-btn {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .save-btn {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .demo-badge {
+            background: var(--accent);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        
+        .premium-features {
+            background: var(--gradient-premium);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+        
+        .premium-features h3 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .premium-features ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .premium-features li {
+            margin-bottom: 0.25rem;
+            padding-left: 1rem;
+            position: relative;
+        }
+        
+        .premium-features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">OutreachPilotPro</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('scrape_page') }}">Find Emails</a>
+            <a href="{{ url_for('campaigns_page') }}">Campaigns</a>
+            <a href="{{ url_for('subscription_page') }}">Subscription</a>
+        </div>
+        <div class="user-menu">
+            <span>{{ user.name }}</span>
+            <div class="user-avatar">{{ user.name[0] }}</div>
+            <a href="{{ url_for('logout') }}" style="color: #666;">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Advanced Email Finder</h1>
+            <p>Discover targeted business emails with precision targeting and advanced filters</p>
+        </div>
+
+        <div class="search-tabs">
+            <button class="tab-btn active" onclick="showTab('basic')">Basic Search</button>
+            <button class="tab-btn" onclick="showTab('advanced')">Advanced Targeting</button>
+            <button class="tab-btn" onclick="showTab('infinite')">Infinite Database <span class="demo-badge">LIVE DEMO</span></button>
+            <button class="tab-btn" onclick="showTab('bulk')">Bulk Search</button>
+        </div>
+
+        <!-- Basic Search Panel -->
+        <div id="basic-panel" class="search-panel">
+            <h2>Basic Email Search</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Website URL</label>
+                    <input type="url" class="form-input" id="basic-url" placeholder="https://example.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Company Name</label>
+                    <input type="text" class="form-input" id="basic-company" placeholder="Acme Corporation">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Industry</label>
+                    <select class="form-select" id="basic-industry">
+                        <option value="">Select Industry</option>
+                        <option value="technology">Technology</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="finance">Finance</option>
+                        <option value="retail">Retail</option>
+                        <option value="manufacturing">Manufacturing</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <input type="text" class="form-input" id="basic-location" placeholder="New York, CA, etc.">
+                </div>
+            </div>
+            <button class="submit-btn" onclick="basicSearch()">🔍 Search Emails</button>
+        </div>
+
+        <!-- Advanced Targeting Panel -->
+        <div id="advanced-panel" class="search-panel" style="display: none;">
+            <h2>Advanced Targeting</h2>
+            <div class="premium-features">
+                <h3>🎯 Precision Targeting Features</h3>
+                <ul>
+                    <li>Industry-specific targeting with subcategories</li>
+                    <li>Company size and revenue filters</li>
+                    <li>Geographic targeting by city, state, or country</li>
+                    <li>Job title and department targeting</li>
+                    <li>Technology stack and tools used</li>
+                </ul>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Primary Industry</label>
+                    <select class="form-select" id="advanced-industry">
+                        <option value="">Select Industry</option>
+                        <option value="ecommerce">E-commerce</option>
+                        <option value="saas">SaaS & Software</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="finance">Finance & Banking</option>
+                        <option value="real-estate">Real Estate</option>
+                        <option value="education">Education</option>
+                        <option value="consulting">Consulting</option>
+                        <option value="marketing">Marketing & Advertising</option>
+                        <option value="legal">Legal Services</option>
+                        <option value="manufacturing">Manufacturing</option>
+                        <option value="retail">Retail</option>
+                        <option value="restaurant">Restaurant & Food</option>
+                        <option value="fitness">Fitness & Wellness</option>
+                        <option value="beauty">Beauty & Personal Care</option>
+                        <option value="automotive">Automotive</option>
+                        <option value="travel">Travel & Tourism</option>
+                        <option value="nonprofit">Non-Profit</option>
+                        <option value="government">Government</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Subcategory</label>
+                    <select class="form-select" id="advanced-subcategory">
+                        <option value="">Select Subcategory</option>
+                        <!-- Will be populated based on industry -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Company Size</label>
+                    <select class="form-select" id="advanced-size">
+                        <option value="">Any Size</option>
+                        <option value="startup">Startup (1-10 employees)</option>
+                        <option value="small">Small (11-50 employees)</option>
+                        <option value="medium">Medium (51-200 employees)</option>
+                        <option value="large">Large (201-1000 employees)</option>
+                        <option value="enterprise">Enterprise (1000+ employees)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Annual Revenue</label>
+                    <select class="form-select" id="advanced-revenue">
+                        <option value="">Any Revenue</option>
+                        <option value="under-1m">Under $1M</option>
+                        <option value="1m-10m">$1M - $10M</option>
+                        <option value="10m-50m">$10M - $50M</option>
+                        <option value="50m-100m">$50M - $100M</option>
+                        <option value="over-100m">Over $100M</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Target Job Titles</label>
+                    <select class="form-select" id="advanced-titles" multiple>
+                        <option value="ceo">CEO / Founder</option>
+                        <option value="cto">CTO / Technical Lead</option>
+                        <option value="cmo">CMO / Marketing Director</option>
+                        <option value="cfo">CFO / Finance Director</option>
+                        <option value="hr">HR Director</option>
+                        <option value="sales">Sales Director</option>
+                        <option value="operations">Operations Manager</option>
+                        <option value="product">Product Manager</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Geographic Location</label>
+                    <input type="text" class="form-input" id="advanced-location" placeholder="City, State, or Country">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Technology Stack</label>
+                    <select class="form-select" id="advanced-tech" multiple>
+                        <option value="shopify">Shopify</option>
+                        <option value="woocommerce">WooCommerce</option>
+                        <option value="magento">Magento</option>
+                        <option value="salesforce">Salesforce</option>
+                        <option value="hubspot">HubSpot</option>
+                        <option value="mailchimp">Mailchimp</option>
+                        <option value="google-ads">Google Ads</option>
+                        <option value="facebook-ads">Facebook Ads</option>
+                        <option value="quickbooks">QuickBooks</option>
+                        <option value="slack">Slack</option>
+                        <option value="zoom">Zoom</option>
+                        <option value="microsoft">Microsoft 365</option>
+                        <option value="google-workspace">Google Workspace</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Environmental Focus</label>
+                    <select class="form-select" id="advanced-environmental">
+                        <option value="">Any Company</option>
+                        <option value="eco-friendly">Eco-Friendly / Green</option>
+                        <option value="sustainable">Sustainable Practices</option>
+                        <option value="renewable">Renewable Energy</option>
+                        <option value="recycling">Recycling & Waste Management</option>
+                        <option value="organic">Organic Products</option>
+                        <option value="carbon-neutral">Carbon Neutral</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Social Impact</label>
+                    <select class="form-select" id="advanced-social" multiple>
+                        <option value="women-owned">Women-Owned Business</option>
+                        <option value="minority-owned">Minority-Owned Business</option>
+                        <option value="veteran-owned">Veteran-Owned Business</option>
+                        <option value="lgbtq-friendly">LGBTQ+ Friendly</option>
+                        <option value="disability-friendly">Disability-Friendly</option>
+                        <option value="fair-trade">Fair Trade Certified</option>
+                        <option value="b-corp">B Corporation</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="submit-btn premium" onclick="advancedSearch()">🎯 Advanced Search</button>
+        </div>
+
+        <!-- Infinite Database Panel -->
+        <div id="infinite-panel" class="search-panel" style="display: none;">
+            <h2>Infinite Email Database <span class="demo-badge">LIVE DEMO</span></h2>
+            <div class="premium-features">
+                <h3>♾️ Unlimited Email Access</h3>
+                <ul>
+                    <li>Access to 50M+ verified business emails</li>
+                    <li>Real-time data from multiple sources</li>
+                    <li>Advanced AI-powered email generation</li>
+                    <li>Instant results with no rate limits</li>
+                    <li>Export to CSV, Excel, or direct to campaigns</li>
+                </ul>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Industry</label>
+                    <select class="form-select" id="infinite-industry">
+                        <option value="">Select Industry</option>
+                        <option value="ecommerce">E-commerce</option>
+                        <option value="saas">SaaS & Software</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="finance">Finance & Banking</option>
+                        <option value="real-estate">Real Estate</option>
+                        <option value="education">Education</option>
+                        <option value="consulting">Consulting</option>
+                        <option value="marketing">Marketing & Advertising</option>
+                        <option value="legal">Legal Services</option>
+                        <option value="manufacturing">Manufacturing</option>
+                        <option value="retail">Retail</option>
+                        <option value="restaurant">Restaurant & Food</option>
+                        <option value="fitness">Fitness & Wellness</option>
+                        <option value="beauty">Beauty & Personal Care</option>
+                        <option value="automotive">Automotive</option>
+                        <option value="travel">Travel & Tourism</option>
+                        <option value="nonprofit">Non-Profit</option>
+                        <option value="government">Government</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <input type="text" class="form-input" id="infinite-location" placeholder="City, State, or Country">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Company Size</label>
+                    <select class="form-select" id="infinite-size">
+                        <option value="">Any Size</option>
+                        <option value="startup">Startup (1-50)</option>
+                        <option value="small">Small (51-200)</option>
+                        <option value="medium">Medium (201-1000)</option>
+                        <option value="large">Large (1000+)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Email Limit</label>
+                    <select class="form-select" id="infinite-limit">
+                        <option value="100">100 emails</option>
+                        <option value="500">500 emails</option>
+                        <option value="1000" selected>1,000 emails</option>
+                        <option value="5000">5,000 emails</option>
+                        <option value="10000">10,000 emails</option>
+                        <option value="50000">50,000 emails</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="submit-btn premium" onclick="infiniteSearch()">♾️ Search Infinite Database</button>
+        </div>
+
+        <!-- Bulk Search Panel -->
+        <div id="bulk-panel" class="search-panel" style="display: none;">
+            <h2>Bulk Email Search</h2>
+            <div class="premium-features">
+                <h3>📊 Bulk Processing Features</h3>
+                <ul>
+                    <li>Upload CSV/Excel files with company lists</li>
+                    <li>Batch process hundreds of companies</li>
+                    <li>Advanced deduplication and validation</li>
+                    <li>Export results in multiple formats</li>
+                    <li>Progress tracking and error reporting</li>
+                </ul>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Upload Company List (CSV/Excel)</label>
+                <input type="file" class="form-input" id="bulk-file" accept=".csv,.xlsx,.xls">
+                <small style="color: #666;">File should contain columns: Company Name, Website, Industry (optional)</small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Or Paste Company List</label>
+                <textarea class="form-input" id="bulk-text" rows="10" placeholder="Enter company names, one per line:
+Acme Corporation
+TechStart Inc
+Global Solutions LLC"></textarea>
+            </div>
+            
+            <button class="submit-btn premium" onclick="bulkSearch()">📊 Process Bulk Search</button>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="results-section">
+            <div class="results-header">
+                <div class="results-title">Found Emails</div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div class="results-count" id="results-count">0 emails</div>
+                    <button id="create-campaign-btn" class="submit-btn" style="display: none;" onclick="createCampaign()">
+                        📧 Create Campaign
+                    </button>
+                    <button id="export-btn" class="submit-btn" style="display: none;" onclick="exportEmails()">
+                        📥 Export CSV
+                    </button>
+                </div>
+            </div>
+            <div class="email-list" id="email-list">
+                <!-- Results will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        function showTab(tabName) {
+            // Hide all panels
+            document.querySelectorAll('.search-panel').forEach(panel => {
+                panel.style.display = 'none';
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected panel
+            document.getElementById(tabName + '-panel').style.display = 'block';
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        // Basic search
+        function basicSearch() {
+            const url = document.getElementById('basic-url').value;
+            const company = document.getElementById('basic-company').value;
+            const industry = document.getElementById('basic-industry').value;
+            const location = document.getElementById('basic-location').value;
+            
+            if (url) {
+                scrapeWebsite(url);
+            } else if (company) {
+                searchCompany(company, industry);
+            } else if (industry) {
+                searchIndustry(industry, location);
+            } else {
+                alert('Please enter a website URL, company name, or select an industry.');
+            }
+        }
+
+        // Advanced search
+        function advancedSearch() {
+            const industry = document.getElementById('advanced-industry').value;
+            const subcategory = document.getElementById('advanced-subcategory').value;
+            const size = document.getElementById('advanced-size').value;
+            const revenue = document.getElementById('advanced-revenue').value;
+            const location = document.getElementById('advanced-location').value;
+            const environmental = document.getElementById('advanced-environmental').value;
+            
+            // Get multiple selections
+            const titles = Array.from(document.getElementById('advanced-titles').selectedOptions).map(opt => opt.value);
+            const tech = Array.from(document.getElementById('advanced-tech').selectedOptions).map(opt => opt.value);
+            const social = Array.from(document.getElementById('advanced-social').selectedOptions).map(opt => opt.value);
+            
+            const searchData = {
+                industry: industry,
+                subcategory: subcategory,
+                size: size,
+                revenue: revenue,
+                location: location,
+                titles: titles,
+                tech: tech,
+                social: social,
+                environmental: environmental
+            };
+            
+            advancedTargetedSearch(searchData);
+        }
+
+        // Infinite search
+        function infiniteSearch() {
+            const industry = document.getElementById('infinite-industry').value;
+            const location = document.getElementById('infinite-location').value;
+            const size = document.getElementById('infinite-size').value;
+            const limit = parseInt(document.getElementById('infinite-limit').value);
+            
+            searchInfinite(industry, location, size, limit);
+        }
+
+        // Bulk search
+        function bulkSearch() {
+            const file = document.getElementById('bulk-file').files[0];
+            const text = document.getElementById('bulk-text').value;
+            
+            if (file) {
+                processBulkFile(file);
+            } else if (text.trim()) {
+                processBulkText(text);
+            } else {
+                alert('Please upload a file or paste company names.');
+            }
+        }
+
+        // API calls
+        async function scrapeWebsite(url) {
+            showLoading();
+            try {
+                const response = await fetch('/api/scrape/website', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+                const result = await response.json();
+                showResults(result);
+            } catch (error) {
+                showError('Failed to scrape website. Please try again.');
+            }
+        }
+
+        async function searchCompany(companyName, industry) {
+            showLoading();
+            try {
+                const response = await fetch('/api/scrape/company', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ company_name: companyName, industry: industry })
+                });
+                const result = await response.json();
+                showResults(result);
+            } catch (error) {
+                showError('Failed to search company. Please try again.');
+            }
+        }
+
+        async function searchIndustry(industry, location) {
+            showLoading();
+            try {
+                const response = await fetch('/api/scrape/industry', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ industry: industry, location: location })
+                });
+                const result = await response.json();
+                showResults(result);
+            } catch (error) {
+                showError('Failed to search industry. Please try again.');
+            }
+        }
+
+        async function searchInfinite(industry, location, size, limit) {
+            showLoading();
+            try {
+                const response = await fetch('/api/search/infinite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        industry: industry,
+                        location: location,
+                        company_size: size,
+                        limit: limit
+                    })
+                });
+                const result = await response.json();
+                showInfiniteResults(result);
+            } catch (error) {
+                showError('Failed to search infinite database. Please try again.');
+            }
+        }
+
+        async function advancedTargetedSearch(searchData) {
+            showLoading();
+            try {
+                const response = await fetch('/api/search/advanced', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(searchData)
+                });
+                const result = await response.json();
+                showAdvancedResults(result);
+            } catch (error) {
+                showError('Failed to perform advanced search. Please try again.');
+            }
+        }
+
+        function showLoading() {
+            const resultsSection = document.getElementById('results-section');
+            const emailList = document.getElementById('email-list');
+            
+            resultsSection.style.display = 'block';
+            emailList.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Searching for emails...</p>
+                </div>
+            `;
+        }
+
+        function showResults(result) {
+            const resultsSection = document.getElementById('results-section');
+            const emailList = document.getElementById('email-list');
+            const resultsCount = document.getElementById('results-count');
+            const createCampaignBtn = document.getElementById('create-campaign-btn');
+            const exportBtn = document.getElementById('export-btn');
+            
+            if (result.success && result.emails && result.emails.length > 0) {
+                resultsCount.textContent = `${result.emails.length} emails`;
+                createCampaignBtn.style.display = 'inline-block';
+                exportBtn.style.display = 'inline-block';
+                
+                emailList.innerHTML = result.emails.map(email => `
+                    <div class="email-item">
+                        <div class="email-info">
+                            <div class="email-address">${email}</div>
+                            <div class="email-domain">${email.split('@')[1]}</div>
+                        </div>
+                        <div class="email-actions">
+                            <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
+                            <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                resultsCount.textContent = '0 emails';
+                createCampaignBtn.style.display = 'none';
+                exportBtn.style.display = 'none';
+                emailList.innerHTML = `
+                    <div class="loading">
+                        <p>No emails found. Try different search criteria.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function showInfiniteResults(result) {
+            const resultsSection = document.getElementById('results-section');
+            const emailList = document.getElementById('email-list');
+            const resultsCount = document.getElementById('results-count');
+            const createCampaignBtn = document.getElementById('create-campaign-btn');
+            const exportBtn = document.getElementById('export-btn');
+            
+            if (result.success && result.emails && result.emails.length > 0) {
+                resultsCount.textContent = `${result.emails_returned || result.emails.length} emails found`;
+                createCampaignBtn.style.display = 'inline-block';
+                exportBtn.style.display = 'inline-block';
+                
+                let html = '';
+                
+                if (result.sources_used && result.sources_used.length > 0) {
+                    html += '<div style="margin-bottom: 2rem; padding: 1rem; background: var(--gradient-premium); color: white; border-radius: 8px;">';
+                    html += '<h3 style="margin-bottom: 1rem;">Sources Used:</h3>';
+                    html += '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">';
+                    result.sources_used.forEach(source => {
+                        html += `<span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.5rem; border-radius: 15px; font-size: 0.9rem;">${source}</span>`;
+                    });
+                    html += '</div></div>';
+                }
+                
+                html += result.emails.map(email => `
+                    <div class="email-item">
+                        <div class="email-info">
+                            <div class="email-address">${email}</div>
+                            <div class="email-domain">${email.split('@')[1]}</div>
+                        </div>
+                        <div class="email-actions">
+                            <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
+                            <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                emailList.innerHTML = html;
+            } else {
+                resultsCount.textContent = '0 emails';
+                createCampaignBtn.style.display = 'none';
+                exportBtn.style.display = 'none';
+                emailList.innerHTML = `
+                    <div class="loading">
+                        <p>No emails found in the infinite database. Try different search criteria.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function showAdvancedResults(result) {
+            // Similar to showInfiniteResults but with additional targeting info
+            showInfiniteResults(result);
+        }
+
+        function showError(message) {
+            const resultsSection = document.getElementById('results-section');
+            const emailList = document.getElementById('email-list');
+            
+            resultsSection.style.display = 'block';
+            emailList.innerHTML = `
+                <div class="loading">
+                    <p style="color: var(--danger);">${message}</p>
+                </div>
+            `;
+        }
+
+        function createCampaign() {
+            const emailItems = document.querySelectorAll('.email-address');
+            const emails = Array.from(emailItems).map(item => item.textContent);
+            localStorage.setItem('campaign_emails', JSON.stringify(emails));
+            window.location.href = '/campaigns/new';
+        }
+
+        function exportEmails() {
+            const emailItems = document.querySelectorAll('.email-address');
+            const emails = Array.from(emailItems).map(item => item.textContent);
+            
+            const csvContent = "data:text/csv;charset=utf-8," + emails.join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "emails.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function copyEmail(email) {
+            navigator.clipboard.writeText(email).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            });
+        }
+
+        function saveEmail(email) {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Saved!';
+            btn.style.background = '#28a745';
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '';
+            }, 2000);
+        }
+
+        // Populate subcategories based on industry
+        document.getElementById('advanced-industry').addEventListener('change', function() {
+            const industry = this.value;
+            const subcategorySelect = document.getElementById('advanced-subcategory');
+            subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
+            
+            const subcategories = {
+                'ecommerce': ['Fashion & Apparel', 'Electronics', 'Home & Garden', 'Beauty & Personal Care', 'Food & Beverage', 'Sports & Outdoors', 'Books & Media', 'Jewelry & Accessories', 'Pet Supplies', 'Automotive Parts'],
+                'saas': ['CRM Software', 'Project Management', 'Marketing Automation', 'Accounting Software', 'HR Software', 'E-commerce Platforms', 'Analytics Tools', 'Communication Tools', 'Security Software', 'Development Tools'],
+                'healthcare': ['Primary Care', 'Specialty Medicine', 'Mental Health', 'Dental Care', 'Pharmaceuticals', 'Medical Devices', 'Telemedicine', 'Health Insurance', 'Medical Research', 'Wellness & Fitness'],
+                'finance': ['Commercial Banking', 'Investment Banking', 'Insurance', 'Fintech', 'Credit Unions', 'Mortgage Lending', 'Wealth Management', 'Payment Processing', 'Cryptocurrency', 'Financial Planning'],
+                'real-estate': ['Residential Sales', 'Commercial Real Estate', 'Property Management', 'Real Estate Development', 'Mortgage Lending', 'Real Estate Investment', 'Property Appraisal', 'Real Estate Law', 'Construction', 'Architecture'],
+                'education': ['K-12 Schools', 'Higher Education', 'Online Learning', 'Corporate Training', 'Language Learning', 'Test Preparation', 'Educational Technology', 'Special Education', 'Vocational Training', 'Educational Consulting'],
+                'consulting': ['Management Consulting', 'IT Consulting', 'Financial Consulting', 'HR Consulting', 'Marketing Consulting', 'Strategy Consulting', 'Operations Consulting', 'Technology Consulting', 'Business Process', 'Change Management'],
+                'marketing': ['Digital Marketing', 'Content Marketing', 'Social Media Marketing', 'Email Marketing', 'SEO/SEM', 'Branding', 'Public Relations', 'Event Marketing', 'Influencer Marketing', 'Marketing Analytics'],
+                'legal': ['Corporate Law', 'Criminal Law', 'Family Law', 'Real Estate Law', 'Intellectual Property', 'Employment Law', 'Tax Law', 'Immigration Law', 'Personal Injury', 'Bankruptcy Law'],
+                'manufacturing': ['Automotive', 'Electronics', 'Food & Beverage', 'Textiles', 'Chemicals', 'Pharmaceuticals', 'Aerospace', 'Construction Materials', 'Medical Devices', 'Consumer Goods'],
+                'retail': ['Department Stores', 'Specialty Retail', 'Convenience Stores', 'Online Retail', 'Fashion Retail', 'Electronics Retail', 'Home Improvement', 'Grocery Stores', 'Jewelry Stores', 'Sporting Goods'],
+                'restaurant': ['Fast Food', 'Casual Dining', 'Fine Dining', 'Catering', 'Food Trucks', 'Coffee Shops', 'Bakeries', 'Pizza Restaurants', 'Asian Cuisine', 'Mexican Cuisine'],
+                'fitness': ['Gyms & Health Clubs', 'Yoga Studios', 'Personal Training', 'CrossFit', 'Pilates', 'Martial Arts', 'Swimming', 'Tennis', 'Golf', 'Outdoor Fitness'],
+                'beauty': ['Hair Salons', 'Nail Salons', 'Spa Services', 'Cosmetics', 'Skincare', 'Hair Care', 'Makeup Artists', 'Beauty Products', 'Medical Spa', 'Aesthetics'],
+                'automotive': ['Car Dealerships', 'Auto Repair', 'Auto Parts', 'Car Rental', 'Auto Insurance', 'Car Wash', 'Towing Services', 'Auto Financing', 'Motorcycle Dealers', 'RV Dealers'],
+                'travel': ['Hotels & Resorts', 'Travel Agencies', 'Airlines', 'Cruise Lines', 'Tour Operators', 'Vacation Rentals', 'Car Rental', 'Travel Insurance', 'Adventure Travel', 'Business Travel'],
+                'nonprofit': ['Education', 'Healthcare', 'Environment', 'Animal Welfare', 'Human Rights', 'Poverty Relief', 'Arts & Culture', 'Religious Organizations', 'Community Development', 'Disaster Relief'],
+                'government': ['Federal Government', 'State Government', 'Local Government', 'Public Safety', 'Education', 'Healthcare', 'Transportation', 'Environmental Protection', 'Economic Development', 'Social Services']
+            };
+            
+            if (subcategories[industry]) {
+                subcategories[industry].forEach(sub => {
+                    const option = document.createElement('option');
+                    option.value = sub.toLowerCase().replace(/\s+/g, '-');
+                    option.textContent = sub;
+                    subcategorySelect.appendChild(option);
+                });
+            }
+        });
+    </script>
+</body>
+</html> 
