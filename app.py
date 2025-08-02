@@ -289,28 +289,55 @@ def subscription_page():
         return redirect(url_for('login'))
     
     user_id = session['user']['id']
-    subscription = subscription_mgr.get_user_subscription(user_id)
-    usage_stats = subscription_mgr.get_usage_stats(user_id)
     
-    return render_template("subscription.html", 
-                         user=session['user'],
-                         subscription=subscription,
-                         usage_stats=usage_stats,
-                         plans=subscription_manager.SubscriptionPlans.PLANS)
+    if subscription_mgr is None:
+        flash('Subscription service is not available', 'error')
+        return render_template("subscription.html", 
+                             user=session['user'],
+                             subscription=None,
+                             usage_stats={},
+                             plans=subscription_manager.SubscriptionPlans.PLANS)
+    
+    try:
+        subscription = subscription_mgr.get_user_subscription(user_id)
+        usage_stats = subscription_mgr.get_usage_stats(user_id)
+        
+        return render_template("subscription.html", 
+                             user=session['user'],
+                             subscription=subscription,
+                             usage_stats=usage_stats,
+                             plans=subscription_manager.SubscriptionPlans.PLANS)
+    except Exception as e:
+        print(f"Error in subscription_page: {e}")
+        flash('Error loading subscription information', 'error')
+        return render_template("subscription.html", 
+                             user=session['user'],
+                             subscription=None,
+                             usage_stats={},
+                             plans=subscription_manager.SubscriptionPlans.PLANS)
 
 @app.route("/subscription/upgrade/<plan_id>")
 def upgrade_subscription(plan_id):
     if 'user' not in session:
         return redirect(url_for('login'))
     
+    if subscription_mgr is None:
+        flash('Subscription service is not available', 'error')
+        return redirect(url_for('subscription_page'))
+    
     user_id = session['user']['id']
     
-    # Create checkout session
-    checkout_session = subscription_mgr.create_checkout_session(user_id, plan_id)
-    
-    if checkout_session:
-        return redirect(checkout_session['url'])
-    else:
+    try:
+        # Create checkout session
+        checkout_session = subscription_mgr.create_checkout_session(user_id, plan_id)
+        
+        if checkout_session:
+            return redirect(checkout_session['url'])
+        else:
+            flash('Error creating checkout session', 'error')
+            return redirect(url_for('subscription_page'))
+    except Exception as e:
+        print(f"Error in upgrade_subscription: {e}")
         flash('Error creating checkout session', 'error')
         return redirect(url_for('subscription_page'))
 
@@ -319,12 +346,21 @@ def cancel_subscription():
     if 'user' not in session:
         return jsonify({'success': False, 'error': 'Not authenticated'})
     
-    user_id = session['user']['id']
-    success = subscription_mgr.cancel_subscription(user_id)
+    if subscription_mgr is None:
+        flash('Subscription service is not available', 'error')
+        return redirect(url_for('subscription_page'))
     
-    if success:
-        flash('Subscription cancelled successfully', 'success')
-    else:
+    user_id = session['user']['id']
+    
+    try:
+        success = subscription_mgr.cancel_subscription(user_id)
+        
+        if success:
+            flash('Subscription cancelled successfully', 'success')
+        else:
+            flash('Error cancelling subscription', 'error')
+    except Exception as e:
+        print(f"Error in cancel_subscription: {e}")
         flash('Error cancelling subscription', 'error')
     
     return redirect(url_for('subscription_page'))
