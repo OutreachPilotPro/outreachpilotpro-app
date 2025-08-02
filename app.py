@@ -27,27 +27,39 @@ if not app.config.get('SECRET_KEY') or app.config['SECRET_KEY'] == 'dev-secret-k
 
 # Initialize OAuth
 oauth = OAuth(app)
-oauth.register(
-    name='google',
-    client_id=app.config['GOOGLE_CLIENT_ID'],
-    client_secret=app.config['GOOGLE_CLIENT_SECRET'],
-    access_token_url='https://oauth2.googleapis.com/token',
-    access_token_params=None,
-    authorize_url='https://accounts.google.com/o/oauth2/v2/auth',
-    authorize_params=None,
-    api_base_url='https://www.googleapis.com/oauth2/v2/',
-    client_kwargs={
-        'scope': 'openid email profile https://www.googleapis.com/auth/gmail.send'
-    }
-)
+try:
+    oauth.register(
+        name='google',
+        client_id=app.config['GOOGLE_CLIENT_ID'],
+        client_secret=app.config['GOOGLE_CLIENT_SECRET'],
+        access_token_url='https://oauth2.googleapis.com/token',
+        access_token_params=None,
+        authorize_url='https://accounts.google.com/o/oauth2/v2/auth',
+        authorize_params=None,
+        api_base_url='https://www.googleapis.com/oauth2/v2/',
+        client_kwargs={
+            'scope': 'openid email profile https://www.googleapis.com/auth/gmail.send'
+        }
+    )
+except Exception as e:
+    print(f"Warning: Could not initialize OAuth: {e}")
 
 # Initialize managers
-subscription_mgr = subscription_manager.SubscriptionManager()
-email_sender = bulk_email_sender.BulkEmailSender()
-infinite_email_db = email_database.InfiniteEmailDatabase()
+try:
+    subscription_mgr = subscription_manager.SubscriptionManager()
+    email_sender = bulk_email_sender.BulkEmailSender()
+    infinite_email_db = email_database.InfiniteEmailDatabase()
+except Exception as e:
+    print(f"Warning: Could not initialize managers: {e}")
+    subscription_mgr = None
+    email_sender = None
+    infinite_email_db = None
 
 # Add scraper routes
-email_scraper.add_scraper_routes(app)
+try:
+    email_scraper.add_scraper_routes(app)
+except Exception as e:
+    print(f"Warning: Could not add scraper routes: {e}")
 
 @app.route("/")
 def home():
@@ -512,8 +524,11 @@ def internal_error(error):
     return render_template('500.html'), 500
 
 if __name__ == "__main__":
-    # Initialize database tables
-    subscription_mgr._init_database()
+    try:
+        # Initialize database tables
+        subscription_mgr._init_database()
+    except Exception as e:
+        print(f"Warning: Could not initialize database: {e}")
     
     app.run(debug=True, host='0.0.0.0', port=8800)
 
