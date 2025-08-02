@@ -291,7 +291,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - **Documentation**: Check this README
 - **Issues**: Create a GitHub issue
-- **Email**: support@outreachpilotpro.com
+- **Email**: team@outreachpilotpro.com
+- **Support**: support@outreachpilotpro.com
 - **Discord**: Join our community server
 
 ## 🎯 Roadmap
