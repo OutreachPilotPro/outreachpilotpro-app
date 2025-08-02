@@ -127,6 +127,87 @@
             margin-bottom: 2rem;
         }
         
+        .search-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .search-header h2 {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .search-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .search-form {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .primary-group {
+            grid-column: 1 / -1;
+        }
+        
+        .form-hint {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        
+        .search-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        
+        .search-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .primary-btn {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .primary-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .secondary-btn {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .secondary-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+        
         .form-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -352,115 +433,138 @@
         <div class="search-tabs">
             <button class="tab-btn active" onclick="showTab('basic')">Basic Search</button>
             <button class="tab-btn" onclick="showTab('advanced')">Advanced Targeting</button>
-            <button class="tab-btn" onclick="showTab('infinite')">Infinite Database <span class="demo-badge">LIVE DEMO</span></button>
+                            <button class="tab-btn" onclick="showTab('infinite')">Infinite Database</button>
             <button class="tab-btn" onclick="showTab('bulk')">Bulk Search</button>
         </div>
 
         <!-- Basic Search Panel -->
         <div id="basic-panel" class="search-panel">
-            <h2>Basic Email Search</h2>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label class="form-label">Website URL</label>
-                    <input type="url" class="form-input" id="basic-url" placeholder="https://example.com">
+            <div class="search-header">
+                <h2>🔍 Find Business Emails</h2>
+                <p class="search-subtitle">Search by website, company, or industry to discover professional email addresses</p>
+            </div>
+            
+            <div class="search-form">
+                <div class="form-row">
+                    <div class="form-group primary-group">
+                        <label class="form-label">🌐 Website URL</label>
+                        <input type="url" class="form-input" id="basic-url" placeholder="https://example.com">
+                        <small class="form-hint">Enter any website to scrape emails</small>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Company Name</label>
-                    <input type="text" class="form-input" id="basic-company" placeholder="Start typing company name..." list="company-list">
-                    <datalist id="company-list">
-                        <!-- Will be populated with preloaded companies -->
-                    </datalist>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">🏢 Company Name</label>
+                        <input type="text" class="form-input" id="basic-company" placeholder="Start typing company name..." list="company-list">
+                        <datalist id="company-list">
+                            <!-- Will be populated with preloaded companies -->
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">🏭 Industry (Optional)</label>
+                        <select class="form-select" id="basic-industry">
+                            <option value="">Any Industry</option>
+                            <option value="technology">Technology</option>
+                            <option value="healthcare">Healthcare</option>
+                            <option value="finance">Finance</option>
+                            <option value="retail">Retail</option>
+                            <option value="manufacturing">Manufacturing</option>
+                            <option value="ecommerce">E-commerce</option>
+                            <option value="saas">SaaS & Software</option>
+                            <option value="real-estate">Real Estate</option>
+                            <option value="education">Education</option>
+                            <option value="consulting">Consulting</option>
+                            <option value="marketing">Marketing & Advertising</option>
+                            <option value="legal">Legal Services</option>
+                            <option value="restaurant">Restaurant & Food</option>
+                            <option value="fitness">Fitness & Wellness</option>
+                            <option value="beauty">Beauty & Personal Care</option>
+                            <option value="automotive">Automotive</option>
+                            <option value="travel">Travel & Tourism</option>
+                            <option value="nonprofit">Non-Profit</option>
+                            <option value="government">Government</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Industry</label>
-                    <select class="form-select" id="basic-industry">
-                        <option value="">Select Industry</option>
-                        <option value="technology">Technology</option>
-                        <option value="healthcare">Healthcare</option>
-                        <option value="finance">Finance</option>
-                        <option value="retail">Retail</option>
-                        <option value="manufacturing">Manufacturing</option>
-                        <option value="ecommerce">E-commerce</option>
-                        <option value="saas">SaaS & Software</option>
-                        <option value="real-estate">Real Estate</option>
-                        <option value="education">Education</option>
-                        <option value="consulting">Consulting</option>
-                        <option value="marketing">Marketing & Advertising</option>
-                        <option value="legal">Legal Services</option>
-                        <option value="restaurant">Restaurant & Food</option>
-                        <option value="fitness">Fitness & Wellness</option>
-                        <option value="beauty">Beauty & Personal Care</option>
-                        <option value="automotive">Automotive</option>
-                        <option value="travel">Travel & Tourism</option>
-                        <option value="nonprofit">Non-Profit</option>
-                        <option value="government">Government</option>
-                    </select>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">📍 State (Optional)</label>
+                        <select class="form-select" id="basic-state">
+                            <option value="">Any State</option>
+                            <option value="AL">Alabama</option>
+                            <option value="AK">Alaska</option>
+                            <option value="AZ">Arizona</option>
+                            <option value="AR">Arkansas</option>
+                            <option value="CA">California</option>
+                            <option value="CO">Colorado</option>
+                            <option value="CT">Connecticut</option>
+                            <option value="DE">Delaware</option>
+                            <option value="FL">Florida</option>
+                            <option value="GA">Georgia</option>
+                            <option value="HI">Hawaii</option>
+                            <option value="ID">Idaho</option>
+                            <option value="IL">Illinois</option>
+                            <option value="IN">Indiana</option>
+                            <option value="IA">Iowa</option>
+                            <option value="KS">Kansas</option>
+                            <option value="KY">Kentucky</option>
+                            <option value="LA">Louisiana</option>
+                            <option value="ME">Maine</option>
+                            <option value="MD">Maryland</option>
+                            <option value="MA">Massachusetts</option>
+                            <option value="MI">Michigan</option>
+                            <option value="MN">Minnesota</option>
+                            <option value="MS">Mississippi</option>
+                            <option value="MO">Missouri</option>
+                            <option value="MT">Montana</option>
+                            <option value="NE">Nebraska</option>
+                            <option value="NV">Nevada</option>
+                            <option value="NH">New Hampshire</option>
+                            <option value="NJ">New Jersey</option>
+                            <option value="NM">New Mexico</option>
+                            <option value="NY">New York</option>
+                            <option value="NC">North Carolina</option>
+                            <option value="ND">North Dakota</option>
+                            <option value="OH">Ohio</option>
+                            <option value="OK">Oklahoma</option>
+                            <option value="OR">Oregon</option>
+                            <option value="PA">Pennsylvania</option>
+                            <option value="RI">Rhode Island</option>
+                            <option value="SC">South Carolina</option>
+                            <option value="SD">South Dakota</option>
+                            <option value="TN">Tennessee</option>
+                            <option value="TX">Texas</option>
+                            <option value="UT">Utah</option>
+                            <option value="VT">Vermont</option>
+                            <option value="VA">Virginia</option>
+                            <option value="WA">Washington</option>
+                            <option value="WV">West Virginia</option>
+                            <option value="WI">Wisconsin</option>
+                            <option value="WY">Wyoming</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">🏙️ City (Optional)</label>
+                        <select class="form-select" id="basic-city">
+                            <option value="">Any City</option>
+                            <!-- Will be populated based on state selection -->
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">State</label>
-                    <select class="form-select" id="basic-state">
-                        <option value="">Select State</option>
-                        <option value="AL">Alabama</option>
-                        <option value="AK">Alaska</option>
-                        <option value="AZ">Arizona</option>
-                        <option value="AR">Arkansas</option>
-                        <option value="CA">California</option>
-                        <option value="CO">Colorado</option>
-                        <option value="CT">Connecticut</option>
-                        <option value="DE">Delaware</option>
-                        <option value="FL">Florida</option>
-                        <option value="GA">Georgia</option>
-                        <option value="HI">Hawaii</option>
-                        <option value="ID">Idaho</option>
-                        <option value="IL">Illinois</option>
-                        <option value="IN">Indiana</option>
-                        <option value="IA">Iowa</option>
-                        <option value="KS">Kansas</option>
-                        <option value="KY">Kentucky</option>
-                        <option value="LA">Louisiana</option>
-                        <option value="ME">Maine</option>
-                        <option value="MD">Maryland</option>
-                        <option value="MA">Massachusetts</option>
-                        <option value="MI">Michigan</option>
-                        <option value="MN">Minnesota</option>
-                        <option value="MS">Mississippi</option>
-                        <option value="MO">Missouri</option>
-                        <option value="MT">Montana</option>
-                        <option value="NE">Nebraska</option>
-                        <option value="NV">Nevada</option>
-                        <option value="NH">New Hampshire</option>
-                        <option value="NJ">New Jersey</option>
-                        <option value="NM">New Mexico</option>
-                        <option value="NY">New York</option>
-                        <option value="NC">North Carolina</option>
-                        <option value="ND">North Dakota</option>
-                        <option value="OH">Ohio</option>
-                        <option value="OK">Oklahoma</option>
-                        <option value="OR">Oregon</option>
-                        <option value="PA">Pennsylvania</option>
-                        <option value="RI">Rhode Island</option>
-                        <option value="SC">South Carolina</option>
-                        <option value="SD">South Dakota</option>
-                        <option value="TN">Tennessee</option>
-                        <option value="TX">Texas</option>
-                        <option value="UT">Utah</option>
-                        <option value="VT">Vermont</option>
-                        <option value="VA">Virginia</option>
-                        <option value="WA">Washington</option>
-                        <option value="WV">West Virginia</option>
-                        <option value="WI">Wisconsin</option>
-                        <option value="WY">Wyoming</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">City</label>
-                    <select class="form-select" id="basic-city">
-                        <option value="">Select City</option>
-                        <!-- Will be populated based on state selection -->
-                    </select>
+                
+                <div class="search-actions">
+                    <button class="search-btn primary-btn" onclick="basicSearch()">
+                        <span class="btn-icon">🔍</span>
+                        <span class="btn-text">Find Emails</span>
+                    </button>
+                    <button class="search-btn secondary-btn" onclick="clearBasicForm()">
+                        <span class="btn-icon">🗑️</span>
+                        <span class="btn-text">Clear Form</span>
+                    </button>
                 </div>
             </div>
-            <button class="submit-btn" onclick="basicSearch()">🔍 Search Emails</button>
         </div>
 
         <!-- Advanced Targeting Panel -->
@@ -1269,6 +1373,14 @@ Global Solutions LLC"></textarea>
             filteredResults = [...currentResults];
             displayFilteredResults();
             updateResultsSummary();
+        }
+        
+        function clearBasicForm() {
+            document.getElementById('basic-url').value = '';
+            document.getElementById('basic-company').value = '';
+            document.getElementById('basic-industry').value = '';
+            document.getElementById('basic-state').value = '';
+            document.getElementById('basic-city').value = '';
         }
         
         function selectAllEmails() {

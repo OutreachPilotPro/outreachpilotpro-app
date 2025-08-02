@@ -100,6 +100,155 @@
             -webkit-text-fill-color: transparent;
         }
         
+        /* Email Groups Section */
+        .email-groups-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .email-groups-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .email-groups-header h2 {
+            color: #333;
+            font-size: 1.5rem;
+        }
+        
+        .email-input-section {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .email-input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .email-input-label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        
+        .email-input {
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .email-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .load-group-btn {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            align-self: end;
+        }
+        
+        .load-group-btn:hover {
+            background: #1976D2;
+        }
+        
+        .saved-groups {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        
+        .group-card {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .group-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .group-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1rem;
+        }
+        
+        .group-count {
+            background: var(--primary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .group-details {
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .group-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .group-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .load-btn {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .load-btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .delete-btn:hover {
+            background: #c82333;
+        }
+        }
+        
         /* Campaign Cards */
         .campaigns-grid {
             display: grid;
@@ -282,6 +431,26 @@
             <a href="{{ url_for('new_campaign') }}" class="btn">Create New Campaign</a>
         </div>
 
+        <!-- Email Groups Section -->
+        <div class="email-groups-section">
+            <div class="email-groups-header">
+                <h2>📧 Email Groups</h2>
+                <span class="group-count" id="total-groups">0 groups</span>
+            </div>
+            
+            <div class="email-input-section">
+                <div class="email-input-group">
+                    <label class="email-input-label">Add Emails to Campaign</label>
+                    <textarea class="email-input" id="email-input" rows="4" placeholder="Enter email addresses (one per line) or paste a comma-separated list"></textarea>
+                </div>
+                <button class="load-group-btn" onclick="loadSavedGroup()">📂 Load Saved Group</button>
+            </div>
+            
+            <div class="saved-groups" id="saved-groups">
+                <!-- Saved groups will be populated here -->
+            </div>
+        </div>
+
         {% if campaigns %}
         <div class="campaigns-grid">
             {% for campaign in campaigns %}
@@ -337,6 +506,125 @@
     </div>
 
     <script>
+        // Load saved email groups on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedGroups();
+        });
+        
+        // Load saved email groups from localStorage
+        function loadSavedGroups() {
+            const savedLists = JSON.parse(localStorage.getItem('savedEmailLists') || '{}');
+            const savedGroupsContainer = document.getElementById('saved-groups');
+            const totalGroupsElement = document.getElementById('total-groups');
+            
+            const groupNames = Object.keys(savedLists);
+            totalGroupsElement.textContent = `${groupNames.length} groups`;
+            
+            if (groupNames.length === 0) {
+                savedGroupsContainer.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #666;">
+                        <p>No saved email groups yet. Save groups from the email finder to see them here.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            savedGroupsContainer.innerHTML = groupNames.map(groupName => {
+                const group = savedLists[groupName];
+                const createdDate = new Date(group.created).toLocaleDateString();
+                
+                return `
+                    <div class="group-card">
+                        <div class="group-header">
+                            <div class="group-name">${groupName}</div>
+                            <div class="group-count">${group.count} emails</div>
+                        </div>
+                        <div class="group-details">
+                            <div>Created: ${createdDate}</div>
+                            <div>Companies: ${group.companies ? group.companies.length : 0}</div>
+                        </div>
+                        <div class="group-actions">
+                            <button class="group-btn load-btn" onclick="loadGroupEmails('${groupName}')">Load Emails</button>
+                            <button class="group-btn delete-btn" onclick="deleteGroup('${groupName}')">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Load emails from a saved group into the textarea
+        function loadGroupEmails(groupName) {
+            const savedLists = JSON.parse(localStorage.getItem('savedEmailLists') || '{}');
+            const group = savedLists[groupName];
+            
+            if (group && group.emails) {
+                const emailInput = document.getElementById('email-input');
+                emailInput.value = group.emails.join('\n');
+                
+                // Show success message
+                showNotification(`Loaded ${group.emails.length} emails from "${groupName}"`, 'success');
+            }
+        }
+        
+        // Delete a saved group
+        function deleteGroup(groupName) {
+            if (confirm(`Are you sure you want to delete the group "${groupName}"?`)) {
+                const savedLists = JSON.parse(localStorage.getItem('savedEmailLists') || '{}');
+                delete savedLists[groupName];
+                localStorage.setItem('savedEmailLists', JSON.stringify(savedLists));
+                
+                loadSavedGroups();
+                showNotification(`Group "${groupName}" deleted successfully`, 'success');
+            }
+        }
+        
+        // Load saved group (placeholder for dropdown functionality)
+        function loadSavedGroup() {
+            const savedLists = JSON.parse(localStorage.getItem('savedEmailLists') || '{}');
+            const groupNames = Object.keys(savedLists);
+            
+            if (groupNames.length === 0) {
+                alert('No saved groups found. Save groups from the email finder first.');
+                return;
+            }
+            
+            // Create a simple dropdown
+            const groupName = prompt('Enter the name of the group to load:\n\nAvailable groups:\n' + groupNames.join('\n'));
+            
+            if (groupName && savedLists[groupName]) {
+                loadGroupEmails(groupName);
+            }
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            if (type === 'success') {
+                notification.style.background = '#28a745';
+            } else {
+                notification.style.background = '#007bff';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
         function editCampaign(campaignId) {
             window.location.href = `/campaigns/${campaignId}/edit`;
         }
