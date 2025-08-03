@@ -44,6 +44,11 @@
             -webkit-text-fill-color: transparent;
         }
         
+        .logo a {
+            text-decoration: none;
+            color: inherit;
+        }
+        
         .nav-links {
             display: flex;
             gap: 2rem;
@@ -302,7 +307,9 @@
 <body>
     <!-- Navigation -->
     <nav class="navbar">
-        <div class="logo">OutreachPilotPro</div>
+        <div class="logo">
+            <a href="{{ url_for('home') }}">OutreachPilotPro</a>
+        </div>
         <div class="nav-links">
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
             <a href="{{ url_for('scrape_page') }}">Find Emails</a>
@@ -377,26 +384,29 @@
         <div class="pricing-section">
             <h2>Upgrade Your Plan</h2>
             <div class="pricing-grid">
-                {% for plan_id, plan in plans.items() %}
-                <div class="plan-card {% if subscription and subscription.plan_name == plan_id %}featured{% endif %}">
+                {% for plan in stripe_products %}
+                <div class="plan-card {% if subscription and subscription.plan_name == plan.plan_id %}featured{% endif %}">
                     <div class="plan-name">{{ plan.name }}</div>
                     <div class="plan-price">
-                        ${{ plan.price }}<span class="period">/month</span>
+                        {% if plan.price == 0 %}
+                            Free<span class="period"></span>
+                        {% else %}
+                            ${{ plan.price }}<span class="period">/month</span>
+                        {% endif %}
                     </div>
                     <ul class="plan-features">
-                        <li>{{ plan.scrapes_per_month }} email scrapes/month</li>
-                        <li>{{ plan.campaigns_per_month }} campaigns/month</li>
-                        <li>{{ plan.emails_per_month }} emails/month</li>
                         {% if plan.features %}
-                            {% for feature in plan.features %}
+                            {% for feature in plan.features.split(',') %}
                             <li>{{ feature }}</li>
                             {% endfor %}
                         {% endif %}
                     </ul>
                     <button class="upgrade-btn" 
-                            onclick="upgradePlan('{{ plan_id }}')"
-                            {% if subscription and subscription.plan_name == plan_id %}disabled{% endif %}>
-                        {% if subscription and subscription.plan_name == plan_id %}
+                            onclick="upgradePlan('{{ plan.plan_id }}')"
+                            {% if subscription and subscription.plan_name == plan.plan_id %}disabled{% endif %}>
+                        {% if subscription and subscription.plan_name == plan.plan_id %}
+                            Current Plan
+                        {% elif plan.price == 0 %}
                             Current Plan
                         {% else %}
                             Upgrade to {{ plan.name }}

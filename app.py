@@ -340,13 +340,31 @@ def subscription_page():
     
     user_id = session['user']['id']
     
+    # Load Stripe products from database
+    conn = sqlite3.connect("outreachpilot.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM stripe_products ORDER BY price ASC")
+    stripe_products = []
+    for row in c.fetchall():
+        stripe_products.append({
+            'plan_id': row[1],
+            'product_id': row[2],
+            'price_id': row[3],
+            'name': row[4],
+            'price': row[5],
+            'currency': row[6],
+            'interval': row[7],
+            'features': row[8]
+        })
+    conn.close()
+    
     if subscription_mgr is None:
         flash('Subscription service is not available', 'error')
         return render_template("subscription.html", 
                              user=session['user'],
                              subscription=None,
                              usage_stats={},
-                             plans=subscription_manager.SubscriptionPlans.PLANS)
+                             stripe_products=stripe_products)
     
     try:
         subscription = subscription_mgr.get_user_subscription(user_id)
@@ -356,7 +374,7 @@ def subscription_page():
                              user=session['user'],
                              subscription=subscription,
                              usage_stats=usage_stats,
-                             plans=subscription_manager.SubscriptionPlans.PLANS)
+                             stripe_products=stripe_products)
     except Exception as e:
         print(f"Error in subscription_page: {e}")
         flash('Error loading subscription information', 'error')
@@ -364,32 +382,93 @@ def subscription_page():
                              user=session['user'],
                              subscription=None,
                              usage_stats={},
-                             plans=subscription_manager.SubscriptionPlans.PLANS)
+                             stripe_products=stripe_products)
 
 @app.route("/subscription/upgrade/<plan_id>")
 def upgrade_subscription(plan_id):
     if 'user' not in session:
         return redirect(url_for('login'))
     
-    if subscription_mgr is None:
-        flash('Subscription service is not available', 'error')
-        return redirect(url_for('subscription_page'))
-    
     user_id = session['user']['id']
     
     try:
-        # Create checkout session
-        checkout_session = subscription_mgr.create_checkout_session(user_id, plan_id)
+        # Get the price ID for the plan
+        conn = sqlite3.connect("outreachpilot.db")
+        c = conn.cursor()
+        c.execute("SELECT price_id FROM stripe_products WHERE plan_id = ?", (plan_id,))
+        result = c.fetchone()
+        conn.close()
         
-        if checkout_session:
-            return redirect(checkout_session['url'])
-        else:
-            flash('Error creating checkout session', 'error')
+        if not result:
+            flash('Invalid plan selected.', 'error')
             return redirect(url_for('subscription_page'))
+        
+        price_id = result[0]
+        
+        if not price_id:
+            # Free plan - no checkout needed
+            if subscription_mgr:
+                subscription_mgr.create_free_subscription(user_id, plan_id)
+            flash('Successfully upgraded to free plan!', 'success')
+            return redirect(url_for('subscription_page'))
+        
+        # Create Stripe checkout session
+        checkout_session = stripe.checkout.Session.create(
+            customer_email=session['user']['email'],
+            line_items=[{
+                'price': price_id,
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=url_for('subscription_success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=url_for('subscription_page', _external=True),
+            metadata={
+                'user_id': user_id,
+                'plan_id': plan_id
+            }
+        )
+        
+        return redirect(checkout_session.url, code=303)
+        
     except Exception as e:
-        print(f"Error in upgrade_subscription: {e}")
-        flash('Error creating checkout session', 'error')
+        print(f"Error creating checkout session: {str(e)}")
+        flash('Failed to create checkout session. Please try again.', 'error')
         return redirect(url_for('subscription_page'))
+
+@app.route("/subscription/success")
+def subscription_success():
+    """Handle successful subscription"""
+    session_id = request.args.get('session_id')
+    
+    if not session_id:
+        flash('Invalid subscription session.', 'error')
+        return redirect(url_for('subscription_page'))
+    
+    try:
+        # Retrieve the checkout session
+        checkout_session = stripe.checkout.Session.retrieve(session_id)
+        
+        if checkout_session.payment_status == 'paid':
+            user_id = checkout_session.metadata.get('user_id')
+            plan_id = checkout_session.metadata.get('plan_id')
+            
+            # Update user subscription
+            subscription_mgr.create_paid_subscription(
+                user_id=user_id,
+                plan_id=plan_id,
+                stripe_subscription_id=checkout_session.subscription,
+                stripe_customer_id=checkout_session.customer
+            )
+            
+            flash('Subscription activated successfully!', 'success')
+        else:
+            flash('Payment not completed. Please try again.', 'error')
+            
+    except Exception as e:
+        print(f"Error processing subscription success: {str(e)}")
+        flash('Error processing subscription. Please contact support.', 'error')
+    
+    return redirect(url_for('subscription_page'))
 
 @app.route("/subscription/cancel", methods=['POST'])
 def cancel_subscription():
