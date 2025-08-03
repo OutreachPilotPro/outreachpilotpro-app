@@ -10,6 +10,7 @@ import bulk_email_sender
 import email_scraper
 import subscription_manager
 import saas_pricing_model
+from universal_email_finder import UniversalEmailFinder
 import email_database
 
 # Import OAuth dependencies
@@ -70,10 +71,49 @@ def live_demo():
     """Live demo page for email finding"""
     return render_template("live_demo.html")
 
-@app.route("/login")
+@app.route("/login", methods=['GET', 'POST'])
 def login():
     if 'user' in session:
         return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        # Simple login system - create account if doesn't exist
+        conn = sqlite3.connect("outreachpilot.db")
+        c = conn.cursor()
+        
+        # Check if user exists
+        c.execute("SELECT id, email, name FROM users WHERE email = ?", (email,))
+        user = c.fetchone()
+        
+        if user:
+            # User exists, log them in
+            session['user'] = {
+                'id': user[0],
+                'email': user[1],
+                'name': user[2] or email.split('@')[0]
+            }
+            flash('Successfully logged in!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            # Create new user
+            c.execute("INSERT INTO users (email, name, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)", 
+                     (email, email.split('@')[0]))
+            user_id = c.lastrowid
+            conn.commit()
+            
+            session['user'] = {
+                'id': user_id,
+                'email': email,
+                'name': email.split('@')[0]
+            }
+            flash('Account created and logged in successfully!', 'success')
+            return redirect(url_for('dashboard'))
+        
+        conn.close()
+    
     return render_template("login.html")
 
 @app.route("/signup", methods=['GET', 'POST'])
@@ -547,6 +587,65 @@ def advanced_search():
             
     except Exception as e:
         print(f"Error in advanced search: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route("/api/search/universal", methods=['POST'])
+def universal_search():
+    """Revolutionary universal email search across global sources"""
+    print("🚀 Universal search API called")
+    
+    if 'user' not in session:
+        print("User not authenticated")
+        return jsonify({'success': False, 'error': 'Not authenticated'})
+    
+    user_id = session['user']['id']
+    print(f"User ID: {user_id}")
+    
+    try:
+        data = request.get_json()
+        print(f"Universal search data: {data}")
+        
+        query = data.get('query')
+        industry = data.get('industry')
+        location = data.get('location')
+        limit = data.get('limit', 1000)
+        
+        if not query:
+            return jsonify({'success': False, 'error': 'Query is required'})
+        
+        # Use the revolutionary universal email finder
+        universal_finder = UniversalEmailFinder()
+        
+        if industry and industry != 'any':
+            # Industry-specific global search
+            result = universal_finder.find_emails_by_industry_global(
+                industry=industry,
+                location=location,
+                limit=limit
+            )
+        else:
+            # Universal company search
+            result = universal_finder.find_emails_universal(
+                query=query,
+                industry=industry,
+                location=location,
+                limit=limit
+            )
+        
+        print(f"Universal search result: {result}")
+        
+        if result['success']:
+            # Save emails to database
+            scraper = email_scraper.EmailScraper()
+            scraper.save_scraped_emails(user_id, f"Universal Search - {query}", result['emails'], 'universal_search')
+            
+            # Increment usage
+            subscription_mgr.increment_usage(user_id, 'scrapes')
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error in universal search: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
 # Helper functions

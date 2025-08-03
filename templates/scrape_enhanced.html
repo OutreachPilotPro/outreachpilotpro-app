@@ -410,7 +410,9 @@
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo">OutreachPilotPro</div>
+        <div class="logo">
+            <a href="{{ url_for('home') }}" style="text-decoration: none; color: inherit;">OutreachPilotPro</a>
+        </div>
         <div class="nav-links">
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
             <a href="{{ url_for('scrape_page') }}">Find Emails</a>
@@ -431,9 +433,10 @@
         </div>
 
         <div class="search-tabs">
-            <button class="tab-btn active" onclick="showTab('basic')">Basic Search</button>
+                        <button class="tab-btn active" onclick="showTab('basic')">Basic Search</button>
+            <button class="tab-btn" onclick="showTab('universal')">🚀 Universal Search</button>
             <button class="tab-btn" onclick="showTab('advanced')">Advanced Targeting</button>
-                            <button class="tab-btn" onclick="showTab('infinite')">Infinite Database</button>
+            <button class="tab-btn" onclick="showTab('infinite')">Infinite Database</button>
             <button class="tab-btn" onclick="showTab('bulk')">Bulk Search</button>
         </div>
 
@@ -566,8 +569,95 @@
                     </button>
                 </div>
             </div>
+                </div>
+        
+        <!-- Universal Search Panel -->
+        <div id="universal-panel" class="search-panel" style="display: none;">
+            <div class="search-header">
+                <h2>🚀 Universal Email Search</h2>
+                <p class="search-subtitle">Access emails from anywhere in the world using revolutionary multi-source technology</p>
+            </div>
+            <div class="search-form">
+                <div class="form-row">
+                    <div class="form-group primary-group">
+                        <label class="form-label">🌍 Company or Industry</label>
+                        <input type="text" class="form-input" id="universal-query" placeholder="Enter company name or industry (e.g., 'Google' or 'Technology')">
+                        <small class="form-hint">Search any company or industry globally</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">🏭 Industry (Optional)</label>
+                        <select class="form-select" id="universal-industry">
+                            <option value="">Any Industry</option>
+                            <option value="technology">Technology</option>
+                            <option value="healthcare">Healthcare</option>
+                            <option value="finance">Finance</option>
+                            <option value="ecommerce">E-commerce</option>
+                            <option value="saas">SaaS</option>
+                            <option value="marketing">Marketing</option>
+                            <option value="consulting">Consulting</option>
+                            <option value="real_estate">Real Estate</option>
+                            <option value="education">Education</option>
+                            <option value="manufacturing">Manufacturing</option>
+                            <option value="retail">Retail</option>
+                            <option value="restaurant">Restaurant</option>
+                            <option value="fitness">Fitness</option>
+                            <option value="beauty">Beauty</option>
+                            <option value="automotive">Automotive</option>
+                            <option value="travel">Travel</option>
+                            <option value="non_profit">Non-Profit</option>
+                            <option value="government">Government</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">📍 Location (Optional)</label>
+                        <input type="text" class="form-input" id="universal-location" placeholder="City, State, or Country">
+                        <small class="form-hint">Target specific geographic regions</small>
+                    </div>
+                </div>
+                <div class="search-actions">
+                    <button class="search-btn primary-btn" onclick="universalSearch()">
+                        <span class="btn-icon">🚀</span>
+                        <span class="btn-text">Search Global Sources</span>
+                    </button>
+                    <button class="search-btn secondary-btn" onclick="clearUniversalForm()">
+                        <span class="btn-icon">🗑️</span>
+                        <span class="btn-text">Clear Form</span>
+                    </button>
+                </div>
+            </div>
+            <div class="search-features">
+                <h3>🌍 Revolutionary Search Technology</h3>
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <span class="feature-icon">🔍</span>
+                        <span>10+ Data Sources</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🌐</span>
+                        <span>Global Coverage</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">⚡</span>
+                        <span>Real-time Results</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">✅</span>
+                        <span>Verified Emails</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🎯</span>
+                        <span>Smart Targeting</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🚀</span>
+                        <span>Unlimited Access</span>
+                    </div>
+                </div>
+            </div>
         </div>
-
+        
         <!-- Advanced Targeting Panel -->
         <div id="advanced-panel" class="search-panel" style="display: none;">
             <h2>Advanced Targeting</h2>
@@ -1000,6 +1090,133 @@ Global Solutions LLC"></textarea>
             } else {
                 alert('Please upload a file or paste company names.');
             }
+        }
+        
+        // Universal search
+        async function universalSearch() {
+            showLoading();
+            const query = document.getElementById('universal-query').value.trim();
+            const industry = document.getElementById('universal-industry').value;
+            const location = document.getElementById('universal-location').value.trim();
+            
+            if (!query) {
+                showError('Please enter a company name or industry to search');
+                return;
+            }
+            
+            const searchData = {
+                query: query,
+                industry: industry || null,
+                location: location || null,
+                limit: 1000
+            };
+            
+            try {
+                const response = await fetch('/api/search/universal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(searchData)
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showUniversalResults(result);
+                } else {
+                    showError(result.error || 'Universal search failed');
+                }
+            } catch (error) {
+                console.error('Universal search error:', error);
+                showError('Universal search failed. Please try again.');
+            }
+        }
+        
+        function showUniversalResults(result) {
+            const resultsDiv = document.getElementById('search-results');
+            
+            // Convert emails to structured data
+            currentResults = result.emails.map(email => {
+                const domain = email.split('@')[1];
+                const isVerified = result.verification_results && result.verification_results[email];
+                return {
+                    email: email,
+                    domain: domain,
+                    verified: isVerified,
+                    company_name: domain.split('.')[0].replace(/[0-9]/g, '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                    industry: result.industry || 'Unknown',
+                    company_size: 'Unknown',
+                    revenue: 'Unknown',
+                    location: result.location || 'Unknown',
+                    employees: 'Unknown'
+                };
+            });
+            
+            const resultsHTML = `
+                <div class="results-header">
+                    <h3>🚀 Universal Search Results</h3>
+                    <div class="results-stats">
+                        <span class="stat-item">
+                            <span class="stat-number">${result.emails_found}</span>
+                            <span class="stat-label">Emails Found</span>
+                        </span>
+                        <span class="stat-item">
+                            <span class="stat-number">${result.verified_emails}</span>
+                            <span class="stat-label">Verified</span>
+                        </span>
+                        <span class="stat-item">
+                            <span class="stat-number">${result.search_methods}</span>
+                            <span class="stat-label">Data Sources</span>
+                        </span>
+                    </div>
+                    <div class="coverage-info">
+                        <span class="coverage-badge">🌍 ${result.coverage}</span>
+                    </div>
+                </div>
+                <div class="sources-used">
+                    <h4>Data Sources Used:</h4>
+                    <div class="source-tags">
+                        ${result.sources_used.map(source => `<span class="source-tag">${source}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="emails-list">
+                    ${result.emails.map(email => {
+                        const isVerified = result.verification_results && result.verification_results[email];
+                        return `
+                            <div class="email-item" style="padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;">
+                                <div class="email-info">
+                                    <div class="email-address">
+                                        ${email}
+                                        ${isVerified ? '<span class="verification-badge" style="margin-left: 0.5rem; background: #28a745; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600;">✓ Verified</span>' : ''}
+                                    </div>
+                                    <div class="email-domain">${email.split('@')[1]}</div>
+                                </div>
+                                <div class="email-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="checkbox" ${selectedEmails.has(email) ? 'checked' : ''} 
+                                               onchange="toggleEmailSelection('${email}')" style="margin: 0;">
+                                        <span>Select</span>
+                                    </label>
+                                    <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
+                                    <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = resultsHTML;
+            resultsDiv.style.display = 'block';
+            
+            // Show organization panel and results summary
+            document.getElementById('organization-panel').style.display = 'block';
+            document.getElementById('results-summary').style.display = 'block';
+            updateResultsSummary();
+        }
+        
+        function clearUniversalForm() {
+            document.getElementById('universal-query').value = '';
+            document.getElementById('universal-industry').value = '';
+            document.getElementById('universal-location').value = '';
         }
 
         // API calls
