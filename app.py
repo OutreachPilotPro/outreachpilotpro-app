@@ -65,6 +65,11 @@ except Exception as e:
 def home():
     return render_template("index.html")
 
+@app.route("/live-demo")
+def live_demo():
+    """Live demo page for email finding"""
+    return render_template("live_demo.html")
+
 @app.route("/login")
 def login():
     if 'user' in session:

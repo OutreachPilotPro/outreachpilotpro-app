@@ -356,8 +356,8 @@ class SubscriptionManager:
                     'quantity': 1,
                 }],
                 mode='subscription',
-                success_url='https://outreachpilotpro.com/subscription/success?session_id={CHECKOUT_SESSION_ID}',
-                cancel_url='https://outreachpilotpro.com/pricing',
+                success_url='http://localhost:8800/subscription/success?session_id={CHECKOUT_SESSION_ID}',
+                cancel_url='http://localhost:8800/subscription',
                 metadata={
                     'user_id': user_id,
                     'plan_id': plan_id
