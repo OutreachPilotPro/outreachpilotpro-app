@@ -773,6 +773,36 @@ class EmailScraper:
         pattern = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'
         return bool(re.match(pattern, email))
     
+    def verify_email(self, email: str) -> bool:
+        """Verify if an email address is valid and deliverable"""
+        try:
+            # Basic format validation
+            if not self._is_valid_email(email):
+                return False
+            
+            # Extract domain
+            domain = email.split('@')[1]
+            
+            # Check if domain has MX records (can receive email)
+            try:
+                dns.resolver.resolve(domain, 'MX')
+                return True
+            except:
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error verifying email {email}: {str(e)}")
+            return False
+    
+    def verify_emails_batch(self, emails: List[str]) -> Dict[str, bool]:
+        """Verify multiple emails and return verification status"""
+        verification_results = {}
+        
+        for email in emails:
+            verification_results[email] = self.verify_email(email)
+        
+        return verification_results
+    
     def _search_contact_pages(self, base_url: str, domain: str) -> List[str]:
         """Search common contact page URLs"""
         emails = []
@@ -887,6 +917,10 @@ def add_scraper_routes(app):
             # Use the new enhanced scraping method
             emails = scraper.scrape_website_emails(url)
             
+            # Verify emails
+            verification_results = scraper.verify_emails_batch(emails)
+            verified_emails = [email for email in emails if verification_results.get(email, False)]
+            
             # Create result format
             from urllib.parse import urlparse
             parsed_url = urlparse(url)
@@ -895,9 +929,12 @@ def add_scraper_routes(app):
             result = {
                 'success': True,
                 'emails': emails,
+                'verified_emails': verified_emails,
+                'verification_results': verification_results,
                 'domain': domain,
                 'url': url,
-                'emails_found': len(emails)
+                'emails_found': len(emails),
+                'verified_count': len(verified_emails)
             }
             
             print(f"Scraping result: {result}")

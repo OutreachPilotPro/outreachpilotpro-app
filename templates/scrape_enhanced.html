@@ -899,6 +899,7 @@ Global Solutions LLC"></textarea>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; font-size: 0.9rem;">
                     <div><strong>Total Companies:</strong> <span id="summary-companies">0</span></div>
                     <div><strong>Total Emails:</strong> <span id="summary-emails">0</span></div>
+                    <div><strong>Verified Emails:</strong> <span id="summary-verified">0</span></div>
                     <div><strong>Selected:</strong> <span id="summary-selected">0</span></div>
                     <div><strong>Avg Company Size:</strong> <span id="summary-avg-size">-</span></div>
                 </div>
@@ -1112,9 +1113,11 @@ Global Solutions LLC"></textarea>
                 // Convert emails to structured data with company information
                 currentResults = result.emails.map(email => {
                     const domain = email.split('@')[1];
+                    const isVerified = result.verification_results && result.verification_results[email];
                     return {
                         email: email,
                         domain: domain,
+                        verified: isVerified,
                         company_name: domain.split('.')[0].replace(/[0-9]/g, '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
                         industry: result.industry || 'Unknown',
                         company_size: 'Unknown',
@@ -1481,23 +1484,30 @@ Global Solutions LLC"></textarea>
                             </div>
                         </div>
                         <div class="company-emails">
-                            ${company.emails.map(email => `
-                                <div class="email-item" style="padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;">
-                                    <div class="email-info">
-                                        <div class="email-address">${email}</div>
-                                        <div class="email-domain">${email.split('@')[1]}</div>
+                            ${company.emails.map(email => {
+                                const emailData = filteredResults.find(item => item.email === email);
+                                const isVerified = emailData ? emailData.verified : false;
+                                return `
+                                    <div class="email-item" style="padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;">
+                                        <div class="email-info">
+                                            <div class="email-address">
+                                                ${email}
+                                                ${isVerified ? '<span class="verification-badge" style="margin-left: 0.5rem; background: #28a745; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600;">✓ Verified</span>' : ''}
+                                            </div>
+                                            <div class="email-domain">${email.split('@')[1]}</div>
+                                        </div>
+                                        <div class="email-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+                                            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <input type="checkbox" ${selectedEmails.has(email) ? 'checked' : ''} 
+                                                       onchange="toggleEmailSelection('${email}')" style="margin: 0;">
+                                                <span>Select</span>
+                                            </label>
+                                            <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
+                                            <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
+                                        </div>
                                     </div>
-                                    <div class="email-actions" style="display: flex; gap: 0.5rem; align-items: center;">
-                                        <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <input type="checkbox" ${selectedEmails.has(email) ? 'checked' : ''} 
-                                                   onchange="toggleEmailSelection('${email}')" style="margin: 0;">
-                                            <span>Select</span>
-                                        </label>
-                                        <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
-                                        <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
-                                    </div>
-                                </div>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 `;
@@ -1535,6 +1545,7 @@ Global Solutions LLC"></textarea>
         function updateResultsSummary() {
             const companies = new Set(filteredResults.map(item => item.company_name));
             const emails = filteredResults.length;
+            const verified = filteredResults.filter(item => item.verified).length;
             const selected = selectedEmails.size;
             
             // Calculate average company size
@@ -1543,6 +1554,7 @@ Global Solutions LLC"></textarea>
             
             document.getElementById('summary-companies').textContent = companies.size;
             document.getElementById('summary-emails').textContent = emails;
+            document.getElementById('summary-verified').textContent = verified;
             document.getElementById('summary-selected').textContent = selected;
             document.getElementById('summary-avg-size').textContent = avgSize > 0 ? `${avgSize} employees` : 'Unknown';
         }
