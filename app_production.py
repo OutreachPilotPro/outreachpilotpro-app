@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+"""
+Production-ready Flask app for OutreachPilotPro
+"""
+
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from config import Config
 import sqlite3
@@ -21,6 +26,12 @@ from google.auth.transport import requests as google_requests
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Production settings
+if os.environ.get('FLASK_ENV') == 'production':
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # Ensure session configuration is set
 if not app.config.get('SECRET_KEY') or app.config['SECRET_KEY'] == 'dev-secret-key':
@@ -50,22 +61,12 @@ except Exception as e:
 try:
     subscription_mgr = subscription_manager.SubscriptionManager()
     email_sender = bulk_email_sender.BulkEmailSender()
-    # Temporarily disable infinite_email_db to prevent database locking
-    # infinite_email_db = email_database.InfiniteEmailDatabase()
-    infinite_email_db = None
+    infinite_email_db = email_database.InfiniteEmailDatabase()
 except Exception as e:
     print(f"Warning: Could not initialize managers: {e}")
     subscription_mgr = None
     email_sender = None
     infinite_email_db = None
-
-# Fix database connection issues
-import sqlite3
-def get_db_connection():
-    conn = sqlite3.connect("outreachpilot.db", timeout=30.0)
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA synchronous=NORMAL")
-    return conn
 
 # Add scraper routes
 try:
@@ -110,20 +111,19 @@ def login():
             return redirect(url_for('dashboard'))
         else:
             # Create new user
-            c.execute("INSERT INTO users (email, name, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)", 
+            c.execute("INSERT INTO users (email, name) VALUES (?, ?)", 
                      (email, email.split('@')[0]))
             user_id = c.lastrowid
             conn.commit()
+            conn.close()
             
             session['user'] = {
                 'id': user_id,
                 'email': email,
                 'name': email.split('@')[0]
             }
-            flash('Account created and logged in successfully!', 'success')
+            flash('Account created and logged in!', 'success')
             return redirect(url_for('dashboard'))
-        
-        conn.close()
     
     return render_template("login.html")
 
@@ -133,88 +133,68 @@ def signup():
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
-        # Handle signup form submission
         email = request.form.get('email')
+        name = request.form.get('name')
         password = request.form.get('password')
         
-        # For now, just redirect to Google OAuth
-        flash('Please use Google OAuth to sign up.', 'info')
-        return redirect(url_for('google_login'))
+        conn = sqlite3.connect("outreachpilot.db")
+        c = conn.cursor()
+        
+        # Check if user exists
+        c.execute("SELECT id FROM users WHERE email = ?", (email,))
+        if c.fetchone():
+            flash('Email already registered. Please login.', 'error')
+            return render_template("signup.html")
+        
+        # Create new user
+        c.execute("INSERT INTO users (email, name) VALUES (?, ?)", (email, name))
+        user_id = c.lastrowid
+        conn.commit()
+        conn.close()
+        
+        session['user'] = {
+            'id': user_id,
+            'email': email,
+            'name': name
+        }
+        flash('Account created successfully!', 'success')
+        return redirect(url_for('dashboard'))
     
     return render_template("signup.html")
 
 @app.route("/login/google")
 def google_login():
-    redirect_uri = app.config['OAUTH_CALLBACK_URL']
-    print(f"Redirecting to Google OAuth with URI: {redirect_uri}")
-    # Clear any existing session data
-    session.clear()
-    return oauth.google.authorize_redirect(redirect_uri, prompt='consent')
+    """Initiate Google OAuth login"""
+    redirect_uri = url_for('google_authorize', _external=True)
+    return oauth.google.authorize_redirect(redirect_uri)
 
 @app.route("/login/google/authorize")
 def google_authorize():
+    """Handle Google OAuth callback"""
     try:
-        print(f"OAuth callback received. Request args: {request.args}")
-        
-        # Get the authorization code from the request
-        code = request.args.get('code')
-        if not code:
-            raise Exception("No authorization code received")
-        
-        # Exchange code for token manually
-        import requests
-        
-        token_url = 'https://oauth2.googleapis.com/token'
-        token_data = {
-            'client_id': app.config['GOOGLE_CLIENT_ID'],
-            'client_secret': app.config['GOOGLE_CLIENT_SECRET'],
-            'code': code,
-            'grant_type': 'authorization_code',
-            'redirect_uri': app.config['OAUTH_CALLBACK_URL']
-        }
-        
-        token_response = requests.post(token_url, data=token_data)
-        token_response.raise_for_status()
-        token = token_response.json()
-        
-        print(f"Token received successfully")
-        
-        # Get user info using the access token
-        userinfo_url = 'https://www.googleapis.com/oauth2/v2/userinfo'
-        headers = {'Authorization': f"Bearer {token['access_token']}"}
-        userinfo_response = requests.get(userinfo_url, headers=headers)
-        userinfo_response.raise_for_status()
-        user_info = userinfo_response.json()
-        
-        print(f"User info: {user_info}")
+        token = oauth.google.authorize_access_token()
+        user_info = oauth.google.parse_id_token(token)
         
         # Get or create user
         user = get_or_create_user(user_info)
-        
-        # Store user in session
-        session['user'] = {
-            'id': user['id'],
-            'email': user['email'],
-            'name': user['name'],
-            'google_id': user['google_id']
-        }
+        session['user'] = user
         
         # Store Google token for email sending
-        store_google_token(user['id'], token)
+        if token.get('access_token'):
+            store_google_token(user['id'], token)
         
         flash('Successfully logged in with Google!', 'success')
         return redirect(url_for('dashboard'))
         
     except Exception as e:
-        print(f"OAuth error: {str(e)}")
-        print(f"Error type: {type(e)}")
-        flash(f'Login failed: {str(e)}', 'error')
+        print(f"Google OAuth error: {e}")
+        flash('Google login failed. Please try again.', 'error')
         return redirect(url_for('login'))
 
 @app.route("/logout")
 def logout():
-    session.pop('user', None)
-    flash('You have been logged out.', 'info')
+    session.clear()
+    flash('Successfully logged out!', 'success')
     return redirect(url_for('home'))
 
 @app.route("/dashboard")
@@ -224,34 +204,35 @@ def dashboard():
     
     user_id = session['user']['id']
     
-    # Get user subscription and usage stats
-    subscription = subscription_mgr.get_user_subscription(user_id)
-    usage_stats = subscription_mgr.get_usage_stats(user_id)
-    
-    # Get recent scraped emails
-    scraper = email_scraper.EmailScraper()
-    recent_emails = scraper.get_user_scraped_emails(user_id, limit=10)
-    
-    # Get recent campaigns
+    # Get user stats
     conn = sqlite3.connect("outreachpilot.db")
     c = conn.cursor()
+    
+    # Get email count
+    c.execute("SELECT COUNT(*) FROM scraped_emails WHERE user_id = ?", (user_id,))
+    email_count = c.fetchone()[0]
+    
+    # Get campaign count
+    c.execute("SELECT COUNT(*) FROM campaigns WHERE user_id = ?", (user_id,))
+    campaign_count = c.fetchone()[0]
+    
+    # Get recent emails
     c.execute("""
-        SELECT id, name, status, created_at, 
-               (SELECT COUNT(*) FROM email_queue WHERE campaign_id = campaigns.id) as recipient_count
-        FROM campaigns 
+        SELECT email, domain, scraped_at 
+        FROM scraped_emails 
         WHERE user_id = ? 
-        ORDER BY created_at DESC 
+        ORDER BY scraped_at DESC 
         LIMIT 5
     """, (user_id,))
-    recent_campaigns = c.fetchall()
+    recent_emails = c.fetchall()
+    
     conn.close()
     
     return render_template("dashboard.html", 
                          user=session['user'],
-                         subscription=subscription,
-                         usage_stats=usage_stats,
-                         recent_emails=recent_emails,
-                         recent_campaigns=recent_campaigns)
+                         email_count=email_count,
+                         campaign_count=campaign_count,
+                         recent_emails=recent_emails)
 
 @app.route("/scrape")
 def scrape_page():
@@ -272,13 +253,10 @@ def campaigns_page():
     
     user_id = session['user']['id']
     
-    # Get all campaigns
     conn = sqlite3.connect("outreachpilot.db")
     c = conn.cursor()
     c.execute("""
-        SELECT id, name, subject, status, created_at, scheduled_time,
-               (SELECT COUNT(*) FROM email_queue WHERE campaign_id = campaigns.id) as recipient_count,
-               (SELECT COUNT(*) FROM email_queue WHERE campaign_id = campaigns.id AND status = 'sent') as sent_count
+        SELECT id, name, status, created_at, email_count 
         FROM campaigns 
         WHERE user_id = ? 
         ORDER BY created_at DESC
@@ -286,7 +264,9 @@ def campaigns_page():
     campaigns = c.fetchall()
     conn.close()
     
-    return render_template("campaigns.html", user=session['user'], campaigns=campaigns)
+    return render_template("campaigns.html", 
+                         user=session['user'],
+                         campaigns=campaigns)
 
 @app.route("/campaigns/new", methods=['GET', 'POST'])
 def new_campaign():
@@ -294,32 +274,32 @@ def new_campaign():
         return redirect(url_for('login'))
     
     if request.method == 'POST':
+        name = request.form.get('name')
+        subject = request.form.get('subject')
+        content = request.form.get('content')
+        emails = request.form.get('emails', '').split('\n')
+        
+        # Clean emails
+        emails = [email.strip() for email in emails if email.strip()]
+        
+        if not name or not subject or not content or not emails:
+            flash('Please fill in all fields.', 'error')
+            return render_template("new_campaign.html", user=session['user'])
+        
         user_id = session['user']['id']
         
-        # Check campaign limits
-        limit_check = subscription_mgr.check_limit(user_id, 'campaigns')
-        if not limit_check['allowed']:
-            flash(f'Campaign limit reached ({limit_check["current"]}/{limit_check["limit"]})', 'error')
-            return redirect(url_for('campaigns_page'))
+        conn = sqlite3.connect("outreachpilot.db")
+        c = conn.cursor()
+        c.execute("""
+            INSERT INTO campaigns (user_id, name, subject, content, email_count, status)
+            VALUES (?, ?, ?, ?, ?, 'draft')
+        """, (user_id, name, subject, content, len(emails)))
+        campaign_id = c.lastrowid
+        conn.commit()
+        conn.close()
         
-        # Create campaign
-        campaign_data = {
-            'name': request.form['name'],
-            'subject': request.form['subject'],
-            'body': request.form['body'],
-            'from_name': request.form.get('from_name', session['user']['name']),
-            'reply_to': request.form.get('reply_to', session['user']['email']),
-            'recipients': request.form['recipients'].split('\n') if request.form['recipients'] else [],
-            'scheduled_time': request.form.get('scheduled_time')
-        }
-        
-        result = email_sender.create_campaign(user_id, campaign_data)
-        
-        if result['success']:
-            flash('Campaign created successfully!', 'success')
-            return redirect(url_for('campaigns_page'))
-        else:
-            flash(f'Error creating campaign: {result["error"]}', 'error')
+        flash(f'Campaign "{name}" created successfully!', 'success')
+        return redirect(url_for('campaigns_page'))
     
     return render_template("new_campaign.html", user=session['user'])
 
@@ -330,19 +310,27 @@ def send_campaign(campaign_id):
     
     user_id = session['user']['id']
     
-    # Verify campaign belongs to user
-    conn = sqlite3.connect("outreachpilot.db")
-    c = conn.cursor()
-    c.execute("SELECT user_id FROM campaigns WHERE id = ?", (campaign_id,))
-    result = c.fetchone()
-    conn.close()
-    
-    if not result or result[0] != user_id:
-        return jsonify({'success': False, 'error': 'Campaign not found'})
-    
-    # Send campaign
-    result = email_sender.send_campaign(campaign_id)
-    return jsonify(result)
+    try:
+        conn = sqlite3.connect("outreachpilot.db")
+        c = conn.cursor()
+        c.execute("SELECT * FROM campaigns WHERE id = ? AND user_id = ?", (campaign_id, user_id))
+        campaign = c.fetchone()
+        conn.close()
+        
+        if not campaign:
+            return jsonify({'success': False, 'error': 'Campaign not found'})
+        
+        # Update campaign status
+        conn = sqlite3.connect("outreachpilot.db")
+        c = conn.cursor()
+        c.execute("UPDATE campaigns SET status = 'sending' WHERE id = ?", (campaign_id,))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Campaign started'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route("/subscription")
 def subscription_page():
@@ -528,144 +516,6 @@ def api_usage():
         'usage': usage_stats
     })
 
-@app.route("/api/search/infinite", methods=['POST'])
-def search_infinite_emails():
-    """API endpoint for infinite email search"""
-    print("Infinite search API called")
-    
-    if 'user' not in session:
-        print("User not authenticated")
-        return jsonify({'success': False, 'error': 'Not authenticated'})
-    
-    user_id = session['user']['id']
-    print(f"User ID: {user_id}")
-    
-    try:
-        data = request.get_json()
-        print(f"Request data: {data}")
-        
-        industry = data.get('industry')
-        location = data.get('location')
-        company_size = data.get('company_size')
-        limit = data.get('limit', 1000)
-        
-        print(f"Search params: industry={industry}, location={location}, size={company_size}, limit={limit}")
-        
-        # Check subscription limits
-        limit_check = subscription_mgr.check_limit(user_id, 'scrapes')
-        print(f"Limit check: {limit_check}")
-        
-        if not limit_check['allowed']:
-            return jsonify({
-                'success': False, 
-                'error': f'Search limit reached ({limit_check["current"]}/{limit_check["limit"]})'
-            })
-        
-        # Perform infinite email search
-        result = infinite_email_db.search_infinite_emails(
-            industry=industry,
-            location=location,
-            company_size=company_size,
-            limit=limit
-        )
-        
-        print(f"Search result: {result}")
-        
-        if result['success']:
-            # Increment usage
-            subscription_mgr.increment_usage(user_id, 'scrapes')
-            
-            # Save emails to database
-            for email in result['emails']:
-                infinite_email_db.add_email_to_database(
-                    email=email,
-                    industry=industry,
-                    source='infinite_search'
-                )
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        print(f"Error in infinite search: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-
-@app.route("/api/search/advanced", methods=['POST'])
-def advanced_search():
-    """Advanced search with comprehensive targeting options"""
-    print("Advanced search API called")
-    
-    if 'user' not in session:
-        print("User not authenticated")
-        return jsonify({'success': False, 'error': 'Not authenticated'})
-    
-    user_id = session['user']['id']
-    print(f"User ID: {user_id}")
-    
-    try:
-        data = request.get_json()
-        print(f"Advanced search data: {data}")
-        
-        industry = data.get('industry')
-        subcategory = data.get('subcategory')
-        size = data.get('size')
-        revenue = data.get('revenue')
-        location = data.get('location')
-        titles = data.get('titles', [])
-        tech = data.get('tech', [])
-        social = data.get('social', [])
-        environmental = data.get('environmental')
-        
-        # Use the infinite email database with advanced filters
-        if infinite_email_db is None:
-            return jsonify({'success': False, 'error': 'Email database not available'})
-        
-        # Create a comprehensive search query
-        search_params = {
-            'industry': industry,
-            'subcategory': subcategory,
-            'location': location,
-            'company_size': size,
-            'limit': 1000  # Default limit for advanced search
-        }
-        
-        # Add additional filters
-        if revenue:
-            search_params['revenue'] = revenue
-        if titles:
-            search_params['job_titles'] = titles
-        if tech:
-            search_params['technology'] = tech
-        if social:
-            search_params['social_impact'] = social
-        if environmental:
-            search_params['environmental'] = environmental
-        
-        print(f"Searching with params: {search_params}")
-        
-        # Perform the search
-        result = infinite_email_db.search_infinite_emails(**search_params)
-        
-        if result and result.get('emails'):
-            return jsonify({
-                'success': True,
-                'emails': result['emails'],
-                'emails_found': result.get('emails_found', len(result['emails'])),
-                'emails_returned': len(result['emails']),
-                'sources_used': result.get('sources_used', ['Advanced Database']),
-                'search_criteria': search_params,
-                'note': f"Advanced search with {len(search_params)} targeting filters"
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'No emails found with the specified criteria',
-                'search_criteria': search_params
-            })
-            
-    except Exception as e:
-        print(f"Error in advanced search: {e}")
-        return jsonify({'success': False, 'error': str(e)})
-
 @app.route("/api/search/universal", methods=['POST'])
 def universal_search():
     """Universal email search endpoint"""
@@ -770,8 +620,7 @@ def get_or_create_user(user_info):
         user_data = {
             'id': user[0],
             'email': email,
-            'name': name,
-            'google_id': google_id
+            'name': name
         }
     else:
         # Create new user
@@ -783,12 +632,12 @@ def get_or_create_user(user_info):
         user_data = {
             'id': c.lastrowid,
             'email': email,
-            'name': name,
-            'google_id': google_id
+            'name': name
         }
     
     conn.commit()
     conn.close()
+    
     return user_data
 
 def store_google_token(user_id, token):
@@ -796,13 +645,13 @@ def store_google_token(user_id, token):
     conn = sqlite3.connect("outreachpilot.db")
     c = conn.cursor()
     
-    # Create google_tokens table if it doesn't exist
     c.execute("""
         CREATE TABLE IF NOT EXISTS google_tokens (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
-            access_token TEXT NOT NULL,
+            access_token TEXT,
             refresh_token TEXT,
+            token_type TEXT,
             expires_at TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
@@ -810,18 +659,21 @@ def store_google_token(user_id, token):
     """)
     
     # Store or update token
-    expires_at = datetime.fromtimestamp(token['expires_at']) if 'expires_at' in token else None
-    
     c.execute("""
         INSERT OR REPLACE INTO google_tokens 
-        (user_id, access_token, refresh_token, expires_at)
-        VALUES (?, ?, ?, ?)
-    """, (user_id, token['access_token'], token.get('refresh_token'), expires_at))
+        (user_id, access_token, refresh_token, token_type, expires_at)
+        VALUES (?, ?, ?, ?, ?)
+    """, (
+        user_id,
+        token.get('access_token'),
+        token.get('refresh_token'),
+        token.get('token_type'),
+        datetime.fromtimestamp(token.get('expires_at', 0)) if token.get('expires_at') else None
+    ))
     
     conn.commit()
     conn.close()
 
-# Error handlers
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('404.html'), 404
@@ -830,12 +682,9 @@ def not_found_error(error):
 def internal_error(error):
     return render_template('500.html'), 500
 
-if __name__ == "__main__":
-    try:
-        # Initialize database tables
-        subscription_mgr._init_database()
-    except Exception as e:
-        print(f"Warning: Could not initialize database: {e}")
-    
-    app.run(debug=True, host='0.0.0.0', port=8800)
-
+if __name__ == '__main__':
+    # Production settings
+    if os.environ.get('FLASK_ENV') == 'production':
+        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    else:
+        app.run(host='0.0.0.0', port=8800, debug=True) 

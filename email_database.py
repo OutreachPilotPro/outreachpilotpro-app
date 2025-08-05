@@ -75,34 +75,39 @@ class InfiniteEmailDatabase:
         """Initialize the database with sample data"""
         print("Initializing email database...")
         
-        # Load comprehensive company data
-        self._load_tech_companies()
-        self._load_ecommerce_companies()
-        self._load_healthcare_companies()
-        self._load_finance_companies()
-        self._load_real_estate_companies()
-        self._load_education_companies()
-        self._load_consulting_companies()
-        self._load_marketing_companies()
-        self._load_legal_companies()
-        self._load_manufacturing_companies()
-        self._load_retail_companies()
-        self._load_restaurant_companies()
-        self._load_fitness_companies()
-        self._load_beauty_companies()
-        self._load_automotive_companies()
-        self._load_travel_companies()
-        self._load_nonprofit_companies()
-        self._load_government_companies()
-        
-        # Load additional industry data
-        self._load_pharma_companies()
-        self._load_bank_companies()
-        self._load_vc_companies()
-        self._load_healthcare_systems()
-        self._load_investment_firms()
-        
-        print("Email database initialized successfully!")
+        try:
+            # Load comprehensive company data
+            self._load_tech_companies()
+            self._load_ecommerce_companies()
+            self._load_healthcare_companies()
+            self._load_finance_companies()
+            self._load_real_estate_companies()
+            self._load_education_companies()
+            self._load_consulting_companies()
+            self._load_marketing_companies()
+            self._load_legal_companies()
+            self._load_manufacturing_companies()
+            self._load_retail_companies()
+            self._load_restaurant_companies()
+            self._load_fitness_companies()
+            self._load_beauty_companies()
+            self._load_automotive_companies()
+            self._load_travel_companies()
+            self._load_nonprofit_companies()
+            self._load_government_companies()
+            
+            # Load additional industry data
+            self._load_pharma_companies()
+            self._load_bank_companies()
+            self._load_vc_companies()
+            self._load_healthcare_systems()
+            self._load_investment_firms()
+            
+            print("✅ Email database initialized successfully")
+            
+        except Exception as e:
+            print(f"⚠️  Warning: Could not initialize database: {e}")
+            # Don't fail the entire app if database initialization fails
     
     def _load_tech_companies(self):
         """Load technology companies with detailed targeting data"""
@@ -1095,49 +1100,74 @@ class InfiniteEmailDatabase:
     
     def _add_company_to_database(self, company):
         """Add a company with detailed targeting data to the database"""
-        conn = sqlite3.connect("outreachpilot.db")
-        c = conn.cursor()
-        
-        # Create company_database table if it doesn't exist
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS company_database (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                domain TEXT NOT NULL,
-                industry TEXT,
-                subcategory TEXT,
-                size TEXT,
-                revenue TEXT,
-                location TEXT,
-                technology TEXT,
-                job_titles TEXT,
-                environmental TEXT,
-                social_impact TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Insert company data
-        c.execute("""
-            INSERT OR REPLACE INTO company_database 
-            (name, domain, industry, subcategory, size, revenue, location, technology, job_titles, environmental, social_impact)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            company['name'],
-            company['domain'],
-            company.get('industry', ''),
-            company.get('subcategory', ''),
-            company.get('size', ''),
-            company.get('revenue', ''),
-            company.get('location', ''),
-            json.dumps(company.get('technology', [])),
-            json.dumps(company.get('job_titles', [])),
-            company.get('environmental', ''),
-            json.dumps(company.get('social_impact', []))
-        ))
-        
-        conn.commit()
-        conn.close()
+        try:
+            conn = sqlite3.connect("outreachpilot.db")
+            c = conn.cursor()
+            
+            # Check if company_database table exists and get its columns
+            c.execute("PRAGMA table_info(company_database)")
+            columns = [row[1] for row in c.fetchall()]
+            
+            # Create company_database table if it doesn't exist
+            if not columns:
+                c.execute("""
+                    CREATE TABLE IF NOT EXISTS company_database (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        domain TEXT NOT NULL,
+                        industry TEXT,
+                        subcategory TEXT,
+                        size TEXT,
+                        revenue TEXT,
+                        location TEXT,
+                        technology TEXT,
+                        job_titles TEXT,
+                        environmental TEXT,
+                        social_impact TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                columns = ['name', 'domain', 'industry', 'subcategory', 'size', 'revenue', 'location', 'technology', 'job_titles', 'environmental', 'social_impact']
+            
+            # Build dynamic INSERT statement based on available columns
+            available_columns = []
+            values = []
+            
+            column_mapping = {
+                'company_name': company.get('name', ''),
+                'domain': company.get('domain', ''),
+                'industry': company.get('industry', ''),
+                'subcategory': company.get('subcategory', ''),
+                'size': company.get('size', ''),
+                'revenue': company.get('revenue', ''),
+                'location': company.get('location', ''),
+                'technology': json.dumps(company.get('technology', [])),
+                'job_titles': json.dumps(company.get('job_titles', [])),
+                'environmental': company.get('environmental', ''),
+                'social_impact': json.dumps(company.get('social_impact', []))
+            }
+            
+            for col, value in column_mapping.items():
+                if col in columns:
+                    available_columns.append(col)
+                    values.append(value)
+            
+            if available_columns:
+                placeholders = ', '.join(['?' for _ in available_columns])
+                columns_str = ', '.join(available_columns)
+                
+                c.execute(f"""
+                    INSERT OR REPLACE INTO company_database 
+                    ({columns_str})
+                    VALUES ({placeholders})
+                """, values)
+            
+            conn.commit()
+            conn.close()
+            
+        except Exception as e:
+            print(f"Warning: Could not add company to database: {e}")
+            # Don't fail the entire initialization if database operations fail
     
     def _load_pharma_companies(self) -> List[Dict]:
         """Load pharmaceutical companies"""

@@ -44,11 +44,6 @@
             -webkit-text-fill-color: transparent;
         }
         
-        .logo a {
-            text-decoration: none;
-            color: inherit;
-        }
-        
         .nav-links {
             display: flex;
             gap: 2rem;
@@ -233,6 +228,10 @@
             transform: scale(1.05);
         }
         
+        .plan-card.current {
+            border: 2px solid var(--secondary);
+        }
+        
         .plan-name {
             font-size: 1.5rem;
             font-weight: bold;
@@ -292,6 +291,20 @@
             transform: none;
         }
         
+        .cancel-btn {
+            background: #dc3545;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+        
+        .cancel-btn:hover {
+            background: #c82333;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .nav-links {
@@ -308,7 +321,7 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="logo">
-            <a href="{{ url_for('home') }}">OutreachPilotPro</a>
+            <a href="{{ url_for('home') }}" style="text-decoration: none; color: inherit;">OutreachPilotPro</a>
         </div>
         <div class="nav-links">
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
@@ -331,83 +344,123 @@
 
         <!-- Current Plan -->
         <div class="current-plan">
-            <h2>Current Plan: {{ subscription.plan_name|title if subscription else 'Free' }}</h2>
+            <h2>Current Plan: {{ subscription.plan_name if subscription else 'Free Trial' }}</h2>
             <div class="plan-details">
                 <div class="plan-stat">
-                    <div class="value">{{ subscription.plan_name|title if subscription else 'Free' }}</div>
-                    <div class="label">Plan</div>
+                    <div class="value">{{ subscription.tier if subscription else 'free' }}</div>
+                    <div class="label">Plan Tier</div>
                 </div>
                 <div class="plan-stat">
-                    <div class="value">{{ subscription.status|title if subscription else 'Active' }}</div>
+                    <div class="value">{{ subscription.status if subscription else 'active' }}</div>
                     <div class="label">Status</div>
                 </div>
                 <div class="plan-stat">
-                    <div class="value">{{ subscription.current_period_end|default('N/A') }}</div>
+                    <div class="value">${{ subscription.price if subscription else 0 }}/mo</div>
+                    <div class="label">Price</div>
+                </div>
+                {% if subscription and subscription.current_period_end %}
+                <div class="plan-stat">
+                    <div class="value">{{ subscription.current_period_end }}</div>
                     <div class="label">Next Billing</div>
                 </div>
+                {% endif %}
             </div>
+            
+            {% if subscription and subscription.tier != 'free' and subscription.status == 'active' %}
+            <form method="POST" action="{{ url_for('cancel_subscription') }}" onsubmit="return confirm('Are you sure you want to cancel your subscription?');">
+                <button type="submit" class="cancel-btn">Cancel Subscription</button>
+            </form>
+            {% endif %}
         </div>
 
         <!-- Usage Tracking -->
         <div class="usage-section">
             <h2>Usage This Month</h2>
+            
             <div class="usage-item">
                 <div class="usage-header">
-                    <span class="usage-label">Email Scrapes</span>
-                    <span class="usage-count">{{ usage_stats.get('scrapes', {}).get('current', 0) }}/{{ usage_stats.get('scrapes', {}).get('limit', 50) }}</span>
+                    <span class="usage-label">Email Searches</span>
+                    <span class="usage-count">
+                        {{ usage_stats.current_month.emails_scraped }}/{{ usage_stats.current_month.limits.scrapes_per_month if usage_stats.current_month.limits.scrapes_per_month != -1 else '∞' }}
+                    </span>
                 </div>
                 <div class="progress-bar">
-                    <div class="progress-fill" style="width: {{ (usage_stats.get('scrapes', {}).get('current', 0) / usage_stats.get('scrapes', {}).get('limit', 50) * 100)|round(1) }}%"></div>
+                    {% if usage_stats.current_month.limits.scrapes_per_month == -1 %}
+                        <div class="progress-fill" style="width: 100%; background: var(--secondary);"></div>
+                    {% else %}
+                        <div class="progress-fill" style="width: {{ (usage_stats.current_month.emails_scraped / usage_stats.current_month.limits.scrapes_per_month * 100) | round(1) }}%"></div>
+                    {% endif %}
                 </div>
             </div>
+            
             <div class="usage-item">
                 <div class="usage-header">
-                    <span class="usage-label">Email Campaigns</span>
-                    <span class="usage-count">{{ usage_stats.get('campaigns', {}).get('current', 0) }}/{{ usage_stats.get('campaigns', {}).get('limit', 10) }}</span>
+                    <span class="usage-label">Campaigns Created</span>
+                    <span class="usage-count">
+                        {{ usage_stats.current_month.campaigns_created }}/{{ usage_stats.current_month.limits.campaigns_per_month if usage_stats.current_month.limits.campaigns_per_month != -1 else '∞' }}
+                    </span>
                 </div>
                 <div class="progress-bar">
-                    <div class="progress-fill" style="width: {{ (usage_stats.get('campaigns', {}).get('current', 0) / usage_stats.get('campaigns', {}).get('limit', 10) * 100)|round(1) }}%"></div>
+                    {% if usage_stats.current_month.limits.campaigns_per_month == -1 %}
+                        <div class="progress-fill" style="width: 100%; background: var(--secondary);"></div>
+                    {% else %}
+                        <div class="progress-fill" style="width: {{ (usage_stats.current_month.campaigns_created / usage_stats.current_month.limits.campaigns_per_month * 100) | round(1) }}%"></div>
+                    {% endif %}
                 </div>
             </div>
+            
             <div class="usage-item">
                 <div class="usage-header">
                     <span class="usage-label">Emails Sent</span>
-                    <span class="usage-count">{{ usage_stats.get('emails_sent', {}).get('current', 0) }}/{{ usage_stats.get('emails_sent', {}).get('limit', 1000) }}</span>
+                    <span class="usage-count">
+                        {{ usage_stats.current_month.emails_sent }}/{{ usage_stats.current_month.limits.emails_per_month if usage_stats.current_month.limits.emails_per_month != -1 else '∞' }}
+                    </span>
                 </div>
                 <div class="progress-bar">
-                    <div class="progress-fill" style="width: {{ (usage_stats.get('emails_sent', {}).get('current', 0) / usage_stats.get('emails_sent', {}).get('limit', 1000) * 100)|round(1) }}%"></div>
+                    {% if usage_stats.current_month.limits.emails_per_month == -1 %}
+                        <div class="progress-fill" style="width: 100%; background: var(--secondary);"></div>
+                    {% else %}
+                        <div class="progress-fill" style="width: {{ (usage_stats.current_month.emails_sent / usage_stats.current_month.limits.emails_per_month * 100) | round(1) }}%"></div>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
         <!-- Pricing Plans -->
         <div class="pricing-section">
-            <h2>Upgrade Your Plan</h2>
+            <h2>Choose Your Plan</h2>
             <div class="pricing-grid">
-                {% for plan in stripe_products %}
-                <div class="plan-card {% if subscription and subscription.plan_name == plan.plan_id %}featured{% endif %}">
+                {% for plan_id, plan in plans.items() %}
+                <div class="plan-card {% if plan_id == 'professional' %}featured{% endif %} {% if subscription and subscription.tier == plan_id %}current{% endif %}">
                     <div class="plan-name">{{ plan.name }}</div>
                     <div class="plan-price">
-                        {% if plan.price == 0 %}
-                            Free<span class="period"></span>
-                        {% else %}
-                            ${{ plan.price }}<span class="period">/month</span>
-                        {% endif %}
+                        ${{ plan.price }}<span class="period">/month</span>
                     </div>
                     <ul class="plan-features">
-                        {% if plan.features %}
-                            {% for feature in plan.features.split(',') %}
-                            <li>{{ feature }}</li>
-                            {% endfor %}
+                        <li>{{ "{:,}".format(plan.limits.emails_per_month) if plan.limits.emails_per_month != -1 else 'Unlimited' }} emails/month</li>
+                        <li>{{ "{:,}".format(plan.limits.scrapes_per_month) if plan.limits.scrapes_per_month != -1 else 'Unlimited' }} email searches</li>
+                        <li>{{ plan.limits.campaigns_per_month if plan.limits.campaigns_per_month != -1 else 'Unlimited' }} campaigns</li>
+                        {% if plan.limits.email_verification %}
+                        <li>Email verification</li>
+                        {% endif %}
+                        {% if plan.limits.api_access %}
+                        <li>API access</li>
+                        {% endif %}
+                        {% if plan.limits.priority_support %}
+                        <li>Priority support</li>
+                        {% endif %}
+                        {% if plan_id == 'enterprise' %}
+                        <li>Dedicated IP</li>
+                        <li>White label option</li>
                         {% endif %}
                     </ul>
                     <button class="upgrade-btn" 
-                            onclick="upgradePlan('{{ plan.plan_id }}')"
-                            {% if subscription and subscription.plan_name == plan.plan_id %}disabled{% endif %}>
-                        {% if subscription and subscription.plan_name == plan.plan_id %}
+                            onclick="upgradePlan('{{ plan_id }}')"
+                            {% if subscription and subscription.tier == plan_id %}disabled{% endif %}>
+                        {% if subscription and subscription.tier == plan_id %}
                             Current Plan
-                        {% elif plan.price == 0 %}
-                            Current Plan
+                        {% elif plan_id == 'free' %}
+                            Free Trial
                         {% else %}
                             Upgrade to {{ plan.name }}
                         {% endif %}
@@ -420,7 +473,12 @@
 
     <script>
         function upgradePlan(planId) {
-            if (confirm('Are you sure you want to upgrade to this plan?')) {
+            if (planId === 'free') {
+                alert('You are already on the free plan!');
+                return;
+            }
+            
+            if (confirm(`Upgrade to the ${planId} plan?`)) {
                 window.location.href = `/subscription/upgrade/${planId}`;
             }
         }

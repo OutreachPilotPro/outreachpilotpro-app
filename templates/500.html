@@ -5,66 +5,249 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Server Error - OutreachPilotPro</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #388E3C;
+            --secondary: #2196F3;
+            --dark: #212121;
+            --light: #f5f5f5;
+            --gradient: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .logo a {
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        .main-content {
+            flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 2rem;
         }
+        
         .error-container {
             text-align: center;
-            background: white;
-            padding: 3rem;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 500px;
-            width: 90%;
+            max-width: 600px;
         }
+        
         .error-code {
-            font-size: 6rem;
+            font-size: 8rem;
             font-weight: bold;
-            color: #e74c3c;
-            margin: 0;
-            line-height: 1;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
         }
-        .error-message {
-            font-size: 1.5rem;
+        
+        .error-title {
+            font-size: 2rem;
             color: #333;
-            margin: 1rem 0 2rem 0;
+            margin-bottom: 1rem;
         }
-        .error-description {
+        
+        .error-message {
+            font-size: 1.1rem;
             color: #666;
             margin-bottom: 2rem;
-            line-height: 1.6;
         }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
         .btn {
-            display: inline-block;
-            padding: 12px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
             text-decoration: none;
-            border-radius: 25px;
-            font-weight: 600;
-            transition: transform 0.3s ease;
+            transition: all 0.3s ease;
         }
-        .btn:hover {
+        
+        .btn-primary {
+            background: var(--gradient);
+            color: white;
+        }
+        
+        .btn-primary:hover {
             transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .btn-secondary:hover {
+            background: #f8f9fa;
+            border-color: var(--primary);
+        }
+        
+        .status-info {
+            margin-top: 3rem;
+            padding: 2rem;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status-info h3 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .status-message {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        
+        .contact-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .contact-info p {
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+        
+        .contact-info a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .error-code {
+                font-size: 6rem;
+            }
+            
+            .error-title {
+                font-size: 1.5rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="error-container">
-        <h1 class="error-code">500</h1>
-        <h2 class="error-message">Server Error</h2>
-        <p class="error-description">
-            Oops! Something went wrong on our end. 
-            We're working to fix this issue. Please try again later.
-        </p>
-        <a href="/" class="btn">Go Home</a>
+    <nav class="navbar">
+        <div class="logo">
+            <a href="{{ url_for('home') }}">OutreachPilotPro</a>
+        </div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('scrape_page') }}">Find Emails</a>
+            <a href="{{ url_for('campaigns_page') }}">Campaigns</a>
+            <a href="{{ url_for('subscription_page') }}">Subscription</a>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="error-container">
+            <div class="error-code">500</div>
+            <h1 class="error-title">Server Error</h1>
+            <p class="error-message">
+                Oops! Something went wrong on our end. 
+                We're working to fix this issue as quickly as possible.
+            </p>
+            
+            <div class="action-buttons">
+                <a href="{{ url_for('home') }}" class="btn btn-primary">Go Home</a>
+                <a href="javascript:location.reload()" class="btn btn-secondary">Try Again</a>
+                <a href="javascript:history.back()" class="btn btn-secondary">Go Back</a>
+            </div>
+            
+            <div class="status-info">
+                <h3>What happened?</h3>
+                <p class="status-message">
+                    We encountered an unexpected error while processing your request. 
+                    This is usually temporary and should be resolved shortly.
+                </p>
+                
+                <div class="contact-info">
+                    <p><strong>Need immediate help?</strong></p>
+                    <p>Email: <a href="mailto:support@outreachpilotpro.com">support@outreachpilotpro.com</a></p>
+                    <p>We'll get back to you within 24 hours.</p>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 </html> 

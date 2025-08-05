@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Email Finder - OutreachPilotPro</title>
+    <title>Find Emails - OutreachPilotPro</title>
     <style>
         * {
             margin: 0;
@@ -15,23 +15,18 @@
             --primary: #4CAF50;
             --primary-dark: #388E3C;
             --secondary: #2196F3;
-            --accent: #FF9800;
-            --success: #4CAF50;
-            --warning: #FF9800;
-            --danger: #F44336;
             --dark: #212121;
             --light: #f5f5f5;
             --gradient: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
-            --gradient-premium: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f8f9fa;
             color: #333;
-            line-height: 1.6;
         }
         
+        /* Navigation */
         .navbar {
             background: white;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -47,6 +42,11 @@
             background: var(--gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+        
+        .logo a {
+            text-decoration: none;
+            color: inherit;
         }
         
         .nav-links {
@@ -66,8 +66,27 @@
             color: var(--primary);
         }
         
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        /* Main Content */
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 2rem;
         }
@@ -90,36 +109,8 @@
             font-size: 1.1rem;
         }
         
-        .search-tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            background: white;
-            padding: 1rem;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-        }
-        
-        .tab-btn {
-            padding: 1rem 2rem;
-            border: none;
-            background: #f8f9fa;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        
-        .tab-btn.active {
-            background: var(--gradient);
-            color: white;
-        }
-        
-        .tab-btn:hover {
-            transform: translateY(-2px);
-        }
-        
-        .search-panel {
+        /* Search Interface */
+        .search-container {
             background: white;
             border-radius: 15px;
             padding: 2rem;
@@ -127,119 +118,84 @@
             margin-bottom: 2rem;
         }
         
-        .search-header {
-            text-align: center;
+        .search-tabs {
+            display: flex;
+            gap: 1rem;
             margin-bottom: 2rem;
+            border-bottom: 2px solid #f0f0f0;
         }
         
-        .search-header h2 {
-            font-size: 2rem;
-            color: #333;
-            margin-bottom: 0.5rem;
+        .tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
         }
         
-        .search-subtitle {
-            color: #666;
-            font-size: 1.1rem;
+        .tab.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .tab:hover {
+            color: var(--primary);
         }
         
         .search-form {
-            max-width: 800px;
-            margin: 0 auto;
+            display: none;
         }
         
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .primary-group {
-            grid-column: 1 / -1;
-        }
-        
-        .form-hint {
-            color: #666;
-            font-size: 0.9rem;
-            margin-top: 0.25rem;
-        }
-        
-        .search-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-top: 2rem;
-        }
-        
-        .search-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-        
-        .primary-btn {
-            background: var(--primary);
-            color: white;
-        }
-        
-        .primary-btn:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-        }
-        
-        .secondary-btn {
-            background: #f8f9fa;
-            color: #333;
-            border: 2px solid #e0e0e0;
-        }
-        
-        .secondary-btn:hover {
-            background: #e9ecef;
-            border-color: #adb5bd;
-        }
-        
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
+        .search-form.active {
+            display: block;
         }
         
         .form-group {
             margin-bottom: 1.5rem;
         }
         
-        .form-label {
+        .form-group label {
             display: block;
             margin-bottom: 0.5rem;
-            font-weight: 600;
+            font-weight: 500;
             color: #333;
         }
         
-        .form-input, .form-select {
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
             width: 100%;
-            padding: 0.75rem 1rem;
+            padding: 0.75rem;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 1rem;
             transition: border-color 0.3s ease;
         }
         
-        .form-input:focus, .form-select:focus {
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
             outline: none;
             border-color: var(--primary);
         }
         
-        .submit-btn {
+        .domain-input {
+            position: relative;
+        }
+        
+        .domain-input input {
+            padding-left: 2.5rem;
+        }
+        
+        .domain-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+        
+        .search-btn {
             background: var(--gradient);
             color: white;
             padding: 1rem 2rem;
@@ -252,15 +208,53 @@
             width: 100%;
         }
         
-        .submit-btn:hover {
+        .search-btn:hover {
             transform: translateY(-2px);
         }
         
-        .submit-btn.premium {
-            background: var(--gradient-premium);
+        .search-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
         }
         
-        .results-section {
+        /* Quick Examples */
+        .quick-examples {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .quick-examples h4 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        
+        .example-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .example-tag {
+            background: white;
+            border: 1px solid #e0e0e0;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .example-tag:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        /* Results */
+        .results-container {
             background: white;
             border-radius: 15px;
             padding: 2rem;
@@ -273,24 +267,27 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1.5rem;
-        }
-        
-        .results-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #333;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e0e0e0;
         }
         
         .results-count {
-            background: var(--primary);
+            font-size: 1.1rem;
+            color: #666;
+        }
+        
+        .export-btn {
+            background: var(--secondary);
             color: white;
             padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-weight: 600;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
         }
         
         .email-list {
-            max-height: 500px;
+            max-height: 400px;
             overflow-y: auto;
         }
         
@@ -299,12 +296,14 @@
             justify-content: space-between;
             align-items: center;
             padding: 1rem;
-            border-bottom: 1px solid #f0f0f0;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
             transition: background-color 0.3s ease;
         }
         
         .email-item:hover {
-            background-color: #f8f9fa;
+            background: #f8f9fa;
         }
         
         .email-info {
@@ -314,12 +313,11 @@
         .email-address {
             font-weight: 500;
             color: #333;
-            margin-bottom: 0.25rem;
         }
         
         .email-domain {
-            font-size: 0.9rem;
             color: #666;
+            font-size: 0.9rem;
         }
         
         .email-actions {
@@ -328,24 +326,22 @@
         }
         
         .action-btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 5px;
-            font-size: 0.9rem;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #e0e0e0;
+            background: white;
+            border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
         }
         
-        .copy-btn {
-            background: var(--secondary);
-            color: white;
-        }
-        
-        .save-btn {
+        .action-btn:hover {
             background: var(--primary);
             color: white;
+            border-color: var(--primary);
         }
         
+        /* Loading */
         .loading {
             text-align: center;
             padding: 2rem;
@@ -367,51 +363,61 @@
             100% { transform: rotate(360deg); }
         }
         
-        .demo-badge {
-            background: var(--accent);
-            color: white;
-            padding: 0.25rem 0.5rem;
+        /* Recent Searches */
+        .recent-searches {
+            background: white;
             border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-left: 0.5rem;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
         }
         
-        .premium-features {
-            background: var(--gradient-premium);
-            color: white;
-            padding: 1rem;
-            border-radius: 10px;
+        .recent-searches h3 {
             margin-bottom: 1rem;
+            color: #333;
         }
         
-        .premium-features h3 {
-            margin-bottom: 0.5rem;
+        .recent-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
         
-        .premium-features ul {
-            list-style: none;
-            padding: 0;
+        .recent-item {
+            background: #f8f9fa;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
         }
         
-        .premium-features li {
-            margin-bottom: 0.25rem;
-            padding-left: 1rem;
-            position: relative;
+        .recent-item:hover {
+            background: var(--primary);
+            color: white;
         }
         
-        .premium-features li:before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            font-weight: bold;
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .search-tabs {
+                flex-direction: column;
+            }
+            
+            .results-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="logo">
-            <a href="{{ url_for('home') }}" style="text-decoration: none; color: inherit;">OutreachPilotPro</a>
+            <a href="{{ url_for('home') }}">OutreachPilotPro</a>
         </div>
         <div class="nav-links">
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
@@ -428,1411 +434,289 @@
 
     <div class="container">
         <div class="page-header">
-            <h1>Advanced Email Finder</h1>
-            <p>Discover targeted business emails with precision targeting and advanced filters</p>
+            <h1>Find Email Addresses</h1>
+            <p>Discover professional email addresses from any domain or company</p>
         </div>
 
-        <div class="search-tabs">
-                        <button class="tab-btn active" onclick="showTab('basic')">Basic Search</button>
-            <button class="tab-btn" onclick="showTab('universal')">🚀 Universal Search</button>
-            <button class="tab-btn" onclick="showTab('advanced')">Advanced Targeting</button>
-            <button class="tab-btn" onclick="showTab('infinite')">Infinite Database</button>
-            <button class="tab-btn" onclick="showTab('bulk')">Bulk Search</button>
+        <!-- Recent Searches -->
+        <div class="recent-searches">
+            <h3>Recent Searches</h3>
+            <div class="recent-list">
+                <div class="recent-item" onclick="searchDomain('uiowa.edu')">uiowa.edu</div>
+                <div class="recent-item" onclick="searchDomain('google.com')">google.com</div>
+                <div class="recent-item" onclick="searchDomain('microsoft.com')">microsoft.com</div>
+                <div class="recent-item" onclick="searchDomain('apple.com')">apple.com</div>
+            </div>
         </div>
 
-        <!-- Basic Search Panel -->
-        <div id="basic-panel" class="search-panel">
-            <div class="search-header">
-                <h2>🔍 Find Business Emails</h2>
-                <p class="search-subtitle">Search by website, company, or industry to discover professional email addresses</p>
+        <!-- Search Interface -->
+        <div class="search-container">
+            <div class="search-tabs">
+                <div class="tab active" onclick="switchTab('domain')">Domain Search</div>
+                <div class="tab" onclick="switchTab('company')">Company Search</div>
+                <div class="tab" onclick="switchTab('bulk')">Bulk Search</div>
             </div>
-            
-            <div class="search-form">
-                <div class="form-row">
-                    <div class="form-group primary-group">
-                        <label class="form-label">🌐 Website URL</label>
-                        <input type="url" class="form-input" id="basic-url" placeholder="https://example.com">
-                        <small class="form-hint">Enter any website to scrape emails</small>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">🏢 Company Name</label>
-                        <input type="text" class="form-input" id="basic-company" placeholder="Start typing company name..." list="company-list">
-                        <datalist id="company-list">
-                            <!-- Will be populated with preloaded companies -->
-                        </datalist>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">🏭 Industry (Optional)</label>
-                        <select class="form-select" id="basic-industry">
-                            <option value="">Any Industry</option>
-                            <option value="any">All Industries</option>
-                            <option value="technology">Technology</option>
-                            <option value="healthcare">Healthcare</option>
-                            <option value="finance">Finance</option>
-                            <option value="retail">Retail</option>
-                            <option value="manufacturing">Manufacturing</option>
-                            <option value="ecommerce">E-commerce</option>
-                            <option value="saas">SaaS & Software</option>
-                            <option value="real-estate">Real Estate</option>
-                            <option value="education">Education</option>
-                            <option value="consulting">Consulting</option>
-                            <option value="marketing">Marketing & Advertising</option>
-                            <option value="legal">Legal Services</option>
-                            <option value="restaurant">Restaurant & Food</option>
-                            <option value="fitness">Fitness & Wellness</option>
-                            <option value="beauty">Beauty & Personal Care</option>
-                            <option value="automotive">Automotive</option>
-                            <option value="travel">Travel & Tourism</option>
-                            <option value="nonprofit">Non-Profit</option>
-                            <option value="government">Government</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">📍 State (Optional)</label>
-                        <select class="form-select" id="basic-state">
-                            <option value="">Any State</option>
-                            <option value="AL">Alabama</option>
-                            <option value="AK">Alaska</option>
-                            <option value="AZ">Arizona</option>
-                            <option value="AR">Arkansas</option>
-                            <option value="CA">California</option>
-                            <option value="CO">Colorado</option>
-                            <option value="CT">Connecticut</option>
-                            <option value="DE">Delaware</option>
-                            <option value="FL">Florida</option>
-                            <option value="GA">Georgia</option>
-                            <option value="HI">Hawaii</option>
-                            <option value="ID">Idaho</option>
-                            <option value="IL">Illinois</option>
-                            <option value="IN">Indiana</option>
-                            <option value="IA">Iowa</option>
-                            <option value="KS">Kansas</option>
-                            <option value="KY">Kentucky</option>
-                            <option value="LA">Louisiana</option>
-                            <option value="ME">Maine</option>
-                            <option value="MD">Maryland</option>
-                            <option value="MA">Massachusetts</option>
-                            <option value="MI">Michigan</option>
-                            <option value="MN">Minnesota</option>
-                            <option value="MS">Mississippi</option>
-                            <option value="MO">Missouri</option>
-                            <option value="MT">Montana</option>
-                            <option value="NE">Nebraska</option>
-                            <option value="NV">Nevada</option>
-                            <option value="NH">New Hampshire</option>
-                            <option value="NJ">New Jersey</option>
-                            <option value="NM">New Mexico</option>
-                            <option value="NY">New York</option>
-                            <option value="NC">North Carolina</option>
-                            <option value="ND">North Dakota</option>
-                            <option value="OH">Ohio</option>
-                            <option value="OK">Oklahoma</option>
-                            <option value="OR">Oregon</option>
-                            <option value="PA">Pennsylvania</option>
-                            <option value="RI">Rhode Island</option>
-                            <option value="SC">South Carolina</option>
-                            <option value="SD">South Dakota</option>
-                            <option value="TN">Tennessee</option>
-                            <option value="TX">Texas</option>
-                            <option value="UT">Utah</option>
-                            <option value="VT">Vermont</option>
-                            <option value="VA">Virginia</option>
-                            <option value="WA">Washington</option>
-                            <option value="WV">West Virginia</option>
-                            <option value="WI">Wisconsin</option>
-                            <option value="WY">Wyoming</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">🏙️ City (Optional)</label>
-                        <select class="form-select" id="basic-city">
-                            <option value="">Any City</option>
-                            <!-- Will be populated based on state selection -->
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="search-actions">
-                    <button class="search-btn primary-btn" onclick="basicSearch()">
-                        <span class="btn-icon">🔍</span>
-                        <span class="btn-text">Find Emails</span>
-                    </button>
-                    <button class="search-btn secondary-btn" onclick="clearBasicForm()">
-                        <span class="btn-icon">🗑️</span>
-                        <span class="btn-text">Clear Form</span>
-                    </button>
-                </div>
-            </div>
-                </div>
-        
-        <!-- Universal Search Panel -->
-        <div id="universal-panel" class="search-panel" style="display: none;">
-            <div class="search-header">
-                <h2>🚀 Universal Email Search</h2>
-                <p class="search-subtitle">Access emails from anywhere in the world using revolutionary multi-source technology</p>
-            </div>
-            <div class="search-form">
-                <div class="form-row">
-                    <div class="form-group primary-group">
-                        <label class="form-label">🌍 Company or Industry</label>
-                        <input type="text" class="form-input" id="universal-query" placeholder="Enter company name or industry (e.g., 'Google' or 'Technology')">
-                        <small class="form-hint">Search any company or industry globally</small>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">🏭 Industry (Optional)</label>
-                        <select class="form-select" id="universal-industry">
-                            <option value="">Any Industry</option>
-                            <option value="technology">Technology</option>
-                            <option value="healthcare">Healthcare</option>
-                            <option value="finance">Finance</option>
-                            <option value="ecommerce">E-commerce</option>
-                            <option value="saas">SaaS</option>
-                            <option value="marketing">Marketing</option>
-                            <option value="consulting">Consulting</option>
-                            <option value="real_estate">Real Estate</option>
-                            <option value="education">Education</option>
-                            <option value="manufacturing">Manufacturing</option>
-                            <option value="retail">Retail</option>
-                            <option value="restaurant">Restaurant</option>
-                            <option value="fitness">Fitness</option>
-                            <option value="beauty">Beauty</option>
-                            <option value="automotive">Automotive</option>
-                            <option value="travel">Travel</option>
-                            <option value="non_profit">Non-Profit</option>
-                            <option value="government">Government</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">📍 Location (Optional)</label>
-                        <input type="text" class="form-input" id="universal-location" placeholder="City, State, or Country">
-                        <small class="form-hint">Target specific geographic regions</small>
-                    </div>
-                </div>
-                <div class="search-actions">
-                    <button class="search-btn primary-btn" onclick="universalSearch()">
-                        <span class="btn-icon">🚀</span>
-                        <span class="btn-text">Search Global Sources</span>
-                    </button>
-                    <button class="search-btn secondary-btn" onclick="clearUniversalForm()">
-                        <span class="btn-icon">🗑️</span>
-                        <span class="btn-text">Clear Form</span>
-                    </button>
-                </div>
-            </div>
-            <div class="search-features">
-                <h3>🌍 Revolutionary Search Technology</h3>
-                <div class="feature-grid">
-                    <div class="feature-item">
-                        <span class="feature-icon">🔍</span>
-                        <span>10+ Data Sources</span>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">🌐</span>
-                        <span>Global Coverage</span>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">⚡</span>
-                        <span>Real-time Results</span>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">✅</span>
-                        <span>Verified Emails</span>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">🎯</span>
-                        <span>Smart Targeting</span>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">🚀</span>
-                        <span>Unlimited Access</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Advanced Targeting Panel -->
-        <div id="advanced-panel" class="search-panel" style="display: none;">
-            <h2>Advanced Targeting</h2>
-            <div class="premium-features">
-                <h3>🎯 Precision Targeting Features</h3>
-                <ul>
-                    <li>Industry-specific targeting with subcategories</li>
-                    <li>Company size and revenue filters</li>
-                    <li>Geographic targeting by city, state, or country</li>
-                    <li>Job title and department targeting</li>
-                    <li>Technology stack and tools used</li>
-                </ul>
-            </div>
-            
-            <div class="form-grid">
+
+            <!-- Domain Search -->
+            <form class="search-form active" id="domain-form">
                 <div class="form-group">
-                    <label class="form-label">Primary Industry</label>
-                    <select class="form-select" id="advanced-industry">
-                        <option value="">Select Industry</option>
-                        <option value="ecommerce">E-commerce</option>
-                        <option value="saas">SaaS & Software</option>
-                        <option value="healthcare">Healthcare</option>
-                        <option value="finance">Finance & Banking</option>
-                        <option value="real-estate">Real Estate</option>
-                        <option value="education">Education</option>
-                        <option value="consulting">Consulting</option>
-                        <option value="marketing">Marketing & Advertising</option>
-                        <option value="legal">Legal Services</option>
-                        <option value="manufacturing">Manufacturing</option>
-                        <option value="retail">Retail</option>
-                        <option value="restaurant">Restaurant & Food</option>
-                        <option value="fitness">Fitness & Wellness</option>
-                        <option value="beauty">Beauty & Personal Care</option>
-                        <option value="automotive">Automotive</option>
-                        <option value="travel">Travel & Tourism</option>
-                        <option value="nonprofit">Non-Profit</option>
-                        <option value="government">Government</option>
-                    </select>
+                    <label for="domain">Enter Domain or Website</label>
+                    <div class="domain-input">
+                        <span class="domain-icon">🌐</span>
+                        <input type="text" id="domain" name="domain" placeholder="e.g., uiowa.edu, google.com, microsoft.com" required>
+                    </div>
+                    <div class="quick-examples">
+                        <h4>Quick Examples:</h4>
+                        <div class="example-tags">
+                            <span class="example-tag" onclick="setDomain('uiowa.edu')">uiowa.edu</span>
+                            <span class="example-tag" onclick="setDomain('google.com')">google.com</span>
+                            <span class="example-tag" onclick="setDomain('microsoft.com')">microsoft.com</span>
+                            <span class="example-tag" onclick="setDomain('apple.com')">apple.com</span>
+                            <span class="example-tag" onclick="setDomain('amazon.com')">amazon.com</span>
+                            <span class="example-tag" onclick="setDomain('netflix.com')">netflix.com</span>
+                        </div>
+                    </div>
                 </div>
-                
+                <button type="submit" class="search-btn">Find Email Addresses</button>
+            </form>
+
+            <!-- Company Search -->
+            <form class="search-form" id="company-form">
                 <div class="form-group">
-                    <label class="form-label">Subcategory</label>
-                    <select class="form-select" id="advanced-subcategory">
-                        <option value="">Select Subcategory</option>
-                        <!-- Will be populated based on industry -->
-                    </select>
+                    <label for="company">Company Name</label>
+                    <input type="text" id="company" name="company" placeholder="e.g., University of Iowa, Google, Microsoft" required>
                 </div>
-                
                 <div class="form-group">
-                    <label class="form-label">Company Size</label>
-                    <select class="form-select" id="advanced-size">
-                        <option value="">Any Size</option>
-                        <option value="startup">Startup (1-10 employees)</option>
-                        <option value="small">Small (11-50 employees)</option>
-                        <option value="medium">Medium (51-200 employees)</option>
-                        <option value="large">Large (201-1000 employees)</option>
-                        <option value="enterprise">Enterprise (1000+ employees)</option>
-                    </select>
+                    <label for="location">Location (Optional)</label>
+                    <input type="text" id="location" name="location" placeholder="e.g., Iowa City, IA, United States">
                 </div>
-                
+                <button type="submit" class="search-btn">Search Company Emails</button>
+            </form>
+
+            <!-- Bulk Search -->
+            <form class="search-form" id="bulk-form">
                 <div class="form-group">
-                    <label class="form-label">Annual Revenue</label>
-                    <select class="form-select" id="advanced-revenue">
-                        <option value="">Any Revenue</option>
-                        <option value="under-1m">Under $1M</option>
-                        <option value="1m-10m">$1M - $10M</option>
-                        <option value="10m-50m">$10M - $50M</option>
-                        <option value="50m-100m">$50M - $100M</option>
-                        <option value="over-100m">Over $100M</option>
-                    </select>
+                    <label for="bulk-domains">Enter Multiple Domains (One per line)</label>
+                    <textarea id="bulk-domains" name="bulk-domains" rows="6" placeholder="uiowa.edu&#10;google.com&#10;microsoft.com&#10;apple.com" required></textarea>
                 </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Target Job Titles</label>
-                    <select class="form-select" id="advanced-titles" multiple>
-                        <option value="ceo">CEO / Founder</option>
-                        <option value="cto">CTO / Technical Lead</option>
-                        <option value="cmo">CMO / Marketing Director</option>
-                        <option value="cfo">CFO / Finance Director</option>
-                        <option value="hr">HR Director</option>
-                        <option value="sales">Sales Director</option>
-                        <option value="operations">Operations Manager</option>
-                        <option value="product">Product Manager</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Geographic Location</label>
-                    <input type="text" class="form-input" id="advanced-location" placeholder="City, State, or Country">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Technology Stack</label>
-                    <select class="form-select" id="advanced-tech" multiple>
-                        <option value="shopify">Shopify</option>
-                        <option value="woocommerce">WooCommerce</option>
-                        <option value="magento">Magento</option>
-                        <option value="salesforce">Salesforce</option>
-                        <option value="hubspot">HubSpot</option>
-                        <option value="mailchimp">Mailchimp</option>
-                        <option value="google-ads">Google Ads</option>
-                        <option value="facebook-ads">Facebook Ads</option>
-                        <option value="quickbooks">QuickBooks</option>
-                        <option value="slack">Slack</option>
-                        <option value="zoom">Zoom</option>
-                        <option value="microsoft">Microsoft 365</option>
-                        <option value="google-workspace">Google Workspace</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Environmental Focus</label>
-                    <select class="form-select" id="advanced-environmental">
-                        <option value="">Any Company</option>
-                        <option value="eco-friendly">Eco-Friendly / Green</option>
-                        <option value="sustainable">Sustainable Practices</option>
-                        <option value="renewable">Renewable Energy</option>
-                        <option value="recycling">Recycling & Waste Management</option>
-                        <option value="organic">Organic Products</option>
-                        <option value="carbon-neutral">Carbon Neutral</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Social Impact</label>
-                    <select class="form-select" id="advanced-social" multiple>
-                        <option value="women-owned">Women-Owned Business</option>
-                        <option value="minority-owned">Minority-Owned Business</option>
-                        <option value="veteran-owned">Veteran-Owned Business</option>
-                        <option value="lgbtq-friendly">LGBTQ+ Friendly</option>
-                        <option value="disability-friendly">Disability-Friendly</option>
-                        <option value="fair-trade">Fair Trade Certified</option>
-                        <option value="b-corp">B Corporation</option>
-                    </select>
-                </div>
-            </div>
-            
-            <button class="submit-btn premium" onclick="advancedSearch()">🎯 Advanced Search</button>
+                <button type="submit" class="search-btn">Bulk Email Search</button>
+            </form>
         </div>
 
-        <!-- Infinite Database Panel -->
-        <div id="infinite-panel" class="search-panel" style="display: none;">
-            <h2>Infinite Email Database <span class="demo-badge">LIVE DEMO</span></h2>
-            <div class="premium-features">
-                <h3>♾️ Unlimited Email Access</h3>
-                <ul>
-                    <li>Access to 50M+ verified business emails</li>
-                    <li>Real-time data from multiple sources</li>
-                    <li>Advanced AI-powered email generation</li>
-                    <li>Instant results with no rate limits</li>
-                    <li>Export to CSV, Excel, or direct to campaigns</li>
-                </ul>
-            </div>
-            
-            <div class="form-grid">
-                <div class="form-group">
-                    <label class="form-label">Industry</label>
-                    <select class="form-select" id="infinite-industry">
-                        <option value="">Select Industry</option>
-                        <option value="ecommerce">E-commerce</option>
-                        <option value="saas">SaaS & Software</option>
-                        <option value="healthcare">Healthcare</option>
-                        <option value="finance">Finance & Banking</option>
-                        <option value="real-estate">Real Estate</option>
-                        <option value="education">Education</option>
-                        <option value="consulting">Consulting</option>
-                        <option value="marketing">Marketing & Advertising</option>
-                        <option value="legal">Legal Services</option>
-                        <option value="manufacturing">Manufacturing</option>
-                        <option value="retail">Retail</option>
-                        <option value="restaurant">Restaurant & Food</option>
-                        <option value="fitness">Fitness & Wellness</option>
-                        <option value="beauty">Beauty & Personal Care</option>
-                        <option value="automotive">Automotive</option>
-                        <option value="travel">Travel & Tourism</option>
-                        <option value="nonprofit">Non-Profit</option>
-                        <option value="government">Government</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Location</label>
-                    <input type="text" class="form-input" id="infinite-location" placeholder="City, State, or Country">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Company Size</label>
-                    <select class="form-select" id="infinite-size">
-                        <option value="">Any Size</option>
-                        <option value="startup">Startup (1-50)</option>
-                        <option value="small">Small (51-200)</option>
-                        <option value="medium">Medium (201-1000)</option>
-                        <option value="large">Large (1000+)</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Email Limit</label>
-                    <select class="form-select" id="infinite-limit">
-                        <option value="100">100 emails</option>
-                        <option value="500">500 emails</option>
-                        <option value="1000" selected>1,000 emails</option>
-                        <option value="5000">5,000 emails</option>
-                        <option value="10000">10,000 emails</option>
-                        <option value="50000">50,000 emails</option>
-                    </select>
-                </div>
-            </div>
-            
-            <button class="submit-btn premium" onclick="infiniteSearch()">♾️ Search Infinite Database</button>
-        </div>
-
-        <!-- Bulk Search Panel -->
-        <div id="bulk-panel" class="search-panel" style="display: none;">
-            <h2>Bulk Email Search</h2>
-            <div class="premium-features">
-                <h3>📊 Bulk Processing Features</h3>
-                <ul>
-                    <li>Upload CSV/Excel files with company lists</li>
-                    <li>Batch process hundreds of companies</li>
-                    <li>Advanced deduplication and validation</li>
-                    <li>Export results in multiple formats</li>
-                    <li>Progress tracking and error reporting</li>
-                </ul>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Upload Company List (CSV/Excel)</label>
-                <input type="file" class="form-input" id="bulk-file" accept=".csv,.xlsx,.xls">
-                <small style="color: #666;">File should contain columns: Company Name, Website, Industry (optional)</small>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Or Paste Company List</label>
-                <textarea class="form-input" id="bulk-text" rows="10" placeholder="Enter company names, one per line:
-Acme Corporation
-TechStart Inc
-Global Solutions LLC"></textarea>
-            </div>
-            
-            <button class="submit-btn premium" onclick="bulkSearch()">📊 Process Bulk Search</button>
-        </div>
-
-        <!-- Results Section -->
-        <div class="results-section" id="results-section">
+        <!-- Results -->
+        <div class="results-container" id="results">
             <div class="results-header">
-                <div class="results-title">Found Emails</div>
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <div class="results-count" id="results-count">0 emails</div>
-                    <button id="organize-btn" class="submit-btn" style="display: none;" onclick="showOrganizationPanel()">
-                        📊 Organize Results
-                    </button>
-                    <button id="create-campaign-btn" class="submit-btn" style="display: none;" onclick="createCampaign()">
-                        📧 Create Campaign
-                    </button>
-                    <button id="export-btn" class="submit-btn" style="display: none;" onclick="exportEmails()">
-                        📥 Export CSV
-                    </button>
-                </div>
+                <div class="results-count">Found <span id="email-count">0</span> email addresses</div>
+                <button class="export-btn" onclick="exportEmails()">Export CSV</button>
             </div>
-            
-            <!-- Organization Panel -->
-            <div id="organization-panel" style="display: none; margin-bottom: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 10px;">
-                <h3 style="margin-bottom: 1rem;">Organize & Filter Results</h3>
-                
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                    <div class="form-group">
-                        <label class="form-label">Filter by Company Size</label>
-                        <select class="form-select" id="filter-size">
-                            <option value="">All Sizes</option>
-                            <option value="startup">Startup (1-50)</option>
-                            <option value="small">Small (51-200)</option>
-                            <option value="medium">Medium (201-1000)</option>
-                            <option value="large">Large (1000+)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Filter by Revenue</label>
-                        <select class="form-select" id="filter-revenue">
-                            <option value="">All Revenue</option>
-                            <option value="under-1m">Under $1M</option>
-                            <option value="1m-10m">$1M - $10M</option>
-                            <option value="10m-50m">$10M - $50M</option>
-                            <option value="50m-100m">$50M - $100M</option>
-                            <option value="over-100m">Over $100M</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Filter by Location</label>
-                        <select class="form-select" id="filter-location">
-                            <option value="">All Locations</option>
-                            <!-- Will be populated dynamically -->
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Sort By</label>
-                        <select class="form-select" id="sort-by">
-                            <option value="company">Company Name</option>
-                            <option value="size">Company Size</option>
-                            <option value="revenue">Revenue</option>
-                            <option value="location">Location</option>
-                            <option value="industry">Industry</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-                    <button class="submit-btn" onclick="applyFilters()">🔍 Apply Filters</button>
-                    <button class="submit-btn" style="background: #6c757d;" onclick="clearFilters()">🗑️ Clear Filters</button>
-                    <button class="submit-btn" style="background: #28a745;" onclick="selectAllEmails()">✅ Select All</button>
-                    <button class="submit-btn" style="background: #dc3545;" onclick="deselectAllEmails()">❌ Deselect All</button>
-                </div>
-                
-                <div style="display: flex; gap: 1rem;">
-                    <div class="form-group" style="flex: 1;">
-                        <label class="form-label">Save List As</label>
-                        <input type="text" class="form-input" id="save-list-name" placeholder="Enter list name (e.g., 'Tech Companies NYC')">
-                    </div>
-                    <button class="submit-btn" style="background: #17a2b8;" onclick="saveEmailList()">💾 Save List</button>
-                </div>
-            </div>
-            
-            <!-- Results Summary -->
-            <div id="results-summary" style="display: none; margin-bottom: 1rem; padding: 1rem; background: #e9ecef; border-radius: 8px;">
-                <h4 style="margin-bottom: 0.5rem;">Results Summary</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; font-size: 0.9rem;">
-                    <div><strong>Total Companies:</strong> <span id="summary-companies">0</span></div>
-                    <div><strong>Total Emails:</strong> <span id="summary-emails">0</span></div>
-                    <div><strong>Verified Emails:</strong> <span id="summary-verified">0</span></div>
-                    <div><strong>Selected:</strong> <span id="summary-selected">0</span></div>
-                    <div><strong>Avg Company Size:</strong> <span id="summary-avg-size">-</span></div>
-                </div>
-            </div>
-            
             <div class="email-list" id="email-list">
-                <!-- Results will be populated here -->
+                <!-- Email results will be populated here -->
             </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Searching for email addresses...</p>
         </div>
     </div>
 
     <script>
-        // Tab switching
-        function showTab(tabName) {
-            // Hide all panels
-            document.querySelectorAll('.search-panel').forEach(panel => {
-                panel.style.display = 'none';
-            });
+        let currentTab = 'domain';
+        let searchResults = [];
+
+        function switchTab(tab) {
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.search-form').forEach(f => f.classList.remove('active'));
             
-            // Remove active class from all tabs
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Show selected panel
-            document.getElementById(tabName + '-panel').style.display = 'block';
-            
-            // Add active class to clicked tab
             event.target.classList.add('active');
+            document.getElementById(tab + '-form').classList.add('active');
+            currentTab = tab;
         }
 
-        // Basic search
-        function basicSearch() {
-            const url = document.getElementById('basic-url').value;
-            const company = document.getElementById('basic-company').value;
-            const industry = document.getElementById('basic-industry').value;
-            const location = document.getElementById('basic-location').value;
-            
-            if (url) {
-                scrapeWebsite(url);
-            } else if (company) {
-                searchCompany(company, industry);
-            } else if (industry) {
-                searchIndustry(industry, location);
-            } else {
-                alert('Please enter a website URL, company name, or select an industry.');
+        function setDomain(domain) {
+            document.getElementById('domain').value = domain;
+        }
+
+        function searchDomain(domain) {
+            document.getElementById('domain').value = domain;
+            document.getElementById('domain-form').dispatchEvent(new Event('submit'));
+        }
+
+        function formatDomain(input) {
+            // Remove protocol and www
+            let domain = input.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '');
+            // Remove trailing slash
+            domain = domain.replace(/\/$/, '');
+            return domain;
+        }
+
+        // Handle form submissions
+        document.getElementById('domain-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const domain = formatDomain(document.getElementById('domain').value);
+            if (domain) {
+                performSearch({ domain: domain });
             }
-        }
+        });
 
-        // Advanced search
-        function advancedSearch() {
-            const industry = document.getElementById('advanced-industry').value;
-            const subcategory = document.getElementById('advanced-subcategory').value;
-            const size = document.getElementById('advanced-size').value;
-            const revenue = document.getElementById('advanced-revenue').value;
-            const location = document.getElementById('advanced-location').value;
-            const environmental = document.getElementById('advanced-environmental').value;
-            
-            // Get multiple selections
-            const titles = Array.from(document.getElementById('advanced-titles').selectedOptions).map(opt => opt.value);
-            const tech = Array.from(document.getElementById('advanced-tech').selectedOptions).map(opt => opt.value);
-            const social = Array.from(document.getElementById('advanced-social').selectedOptions).map(opt => opt.value);
-            
-            const searchData = {
-                industry: industry,
-                subcategory: subcategory,
-                size: size,
-                revenue: revenue,
-                location: location,
-                titles: titles,
-                tech: tech,
-                social: social,
-                environmental: environmental
-            };
-            
-            advancedTargetedSearch(searchData);
-        }
-
-        // Infinite search
-        function infiniteSearch() {
-            const industry = document.getElementById('infinite-industry').value;
-            const location = document.getElementById('infinite-location').value;
-            const size = document.getElementById('infinite-size').value;
-            const limit = parseInt(document.getElementById('infinite-limit').value);
-            
-            searchInfinite(industry, location, size, limit);
-        }
-
-        // Bulk search
-        function bulkSearch() {
-            const file = document.getElementById('bulk-file').files[0];
-            const text = document.getElementById('bulk-text').value;
-            
-            if (file) {
-                processBulkFile(file);
-            } else if (text.trim()) {
-                processBulkText(text);
-            } else {
-                alert('Please upload a file or paste company names.');
+        document.getElementById('company-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const company = document.getElementById('company').value;
+            const location = document.getElementById('location').value;
+            if (company) {
+                performSearch({ company: company, location: location });
             }
-        }
-        
-        // Universal search
-        async function universalSearch() {
+        });
+
+        document.getElementById('bulk-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const domains = document.getElementById('bulk-domains').value
+                .split('\n')
+                .map(d => formatDomain(d.trim()))
+                .filter(d => d);
+            if (domains.length > 0) {
+                performBulkSearch(domains);
+            }
+        });
+
+        function performSearch(params) {
             showLoading();
-            const query = document.getElementById('universal-query').value.trim();
-            const industry = document.getElementById('universal-industry').value;
-            const location = document.getElementById('universal-location').value.trim();
             
-            if (!query) {
-                showError('Please enter a company name or industry to search');
-                return;
-            }
-            
-            const searchData = {
-                query: query,
-                industry: industry || null,
-                location: location || null,
-                limit: 1000
-            };
-            
-            try {
-                const response = await fetch('/api/search/universal', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(searchData)
-                });
-                const result = await response.json();
-                
-                if (result.success) {
-                    showUniversalResults(result);
+            // Make API call to the correct endpoint
+            fetch('/api/search/universal', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(params)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    displayResults(data.emails || []);
                 } else {
-                    showError(result.error || 'Universal search failed');
+                    alert('Error: ' + (data.error || 'Search failed'));
                 }
-            } catch (error) {
-                console.error('Universal search error:', error);
-                showError('Universal search failed. Please try again.');
-            }
-        }
-        
-        function showUniversalResults(result) {
-            const resultsDiv = document.getElementById('search-results');
-            
-            // Convert emails to structured data
-            currentResults = result.emails.map(email => {
-                const domain = email.split('@')[1];
-                const isVerified = result.verification_results && result.verification_results[email];
-                return {
-                    email: email,
-                    domain: domain,
-                    verified: isVerified,
-                    company_name: domain.split('.')[0].replace(/[0-9]/g, '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                    industry: result.industry || 'Unknown',
-                    company_size: 'Unknown',
-                    revenue: 'Unknown',
-                    location: result.location || 'Unknown',
-                    employees: 'Unknown'
-                };
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Search error:', error);
+                alert('Error: ' + error.message);
             });
+        }
+
+        function performBulkSearch(domains) {
+            showLoading();
             
-            const resultsHTML = `
-                <div class="results-header">
-                    <h3>🚀 Universal Search Results</h3>
-                    <div class="results-stats">
-                        <span class="stat-item">
-                            <span class="stat-number">${result.emails_found}</span>
-                            <span class="stat-label">Emails Found</span>
-                        </span>
-                        <span class="stat-item">
-                            <span class="stat-number">${result.verified_emails}</span>
-                            <span class="stat-label">Verified</span>
-                        </span>
-                        <span class="stat-item">
-                            <span class="stat-number">${result.search_methods}</span>
-                            <span class="stat-label">Data Sources</span>
-                        </span>
-                    </div>
-                    <div class="coverage-info">
-                        <span class="coverage-badge">🌍 ${result.coverage}</span>
-                    </div>
-                </div>
-                <div class="sources-used">
-                    <h4>Data Sources Used:</h4>
-                    <div class="source-tags">
-                        ${result.sources_used.map(source => `<span class="source-tag">${source}</span>`).join('')}
-                    </div>
-                </div>
-                <div class="emails-list">
-                    ${result.emails.map(email => {
-                        const isVerified = result.verification_results && result.verification_results[email];
-                        return `
-                            <div class="email-item" style="padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;">
-                                <div class="email-info">
-                                    <div class="email-address">
-                                        ${email}
-                                        ${isVerified ? '<span class="verification-badge" style="margin-left: 0.5rem; background: #28a745; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600;">✓ Verified</span>' : ''}
-                                    </div>
-                                    <div class="email-domain">${email.split('@')[1]}</div>
-                                </div>
-                                <div class="email-actions" style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="checkbox" ${selectedEmails.has(email) ? 'checked' : ''} 
-                                               onchange="toggleEmailSelection('${email}')" style="margin: 0;">
-                                        <span>Select</span>
-                                    </label>
-                                    <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
-                                    <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
+            // Process domains one by one
+            let allEmails = [];
+            let processed = 0;
             
-            resultsDiv.innerHTML = resultsHTML;
-            resultsDiv.style.display = 'block';
-            
-            // Show organization panel and results summary
-            document.getElementById('organization-panel').style.display = 'block';
-            document.getElementById('results-summary').style.display = 'block';
-            updateResultsSummary();
-        }
-        
-        function clearUniversalForm() {
-            document.getElementById('universal-query').value = '';
-            document.getElementById('universal-industry').value = '';
-            document.getElementById('universal-location').value = '';
-        }
-
-        // API calls
-        async function scrapeWebsite(url) {
-            showLoading();
-            try {
-                const response = await fetch('/api/scrape/website', {
+            domains.forEach(domain => {
+                fetch('/api/search/universal', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: url })
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ domain: domain })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.emails) {
+                        allEmails = allEmails.concat(data.emails);
+                    }
+                    processed++;
+                    
+                    if (processed === domains.length) {
+                        hideLoading();
+                        displayResults(allEmails);
+                    }
+                })
+                .catch(error => {
+                    processed++;
+                    if (processed === domains.length) {
+                        hideLoading();
+                        displayResults(allEmails);
+                    }
                 });
-                const result = await response.json();
-                showResults(result);
-            } catch (error) {
-                showError('Failed to scrape website. Please try again.');
-            }
+            });
         }
 
-        async function searchCompany(companyName, industry) {
-            showLoading();
-            try {
-                const response = await fetch('/api/scrape/company', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ company_name: companyName, industry: industry })
-                });
-                const result = await response.json();
-                showResults(result);
-            } catch (error) {
-                showError('Failed to search company. Please try again.');
-            }
-        }
-
-        async function searchIndustry(industry, location) {
-            showLoading();
-            try {
-                const response = await fetch('/api/scrape/industry', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ industry: industry, location: location })
-                });
-                const result = await response.json();
-                showResults(result);
-            } catch (error) {
-                showError('Failed to search industry. Please try again.');
-            }
-        }
-
-        async function searchInfinite(industry, location, size, limit) {
-            showLoading();
-            try {
-                const response = await fetch('/api/search/infinite', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        industry: industry,
-                        location: location,
-                        company_size: size,
-                        limit: limit
-                    })
-                });
-                const result = await response.json();
-                showInfiniteResults(result);
-            } catch (error) {
-                showError('Failed to search infinite database. Please try again.');
-            }
-        }
-
-        async function advancedTargetedSearch(searchData) {
-            showLoading();
-            try {
-                const response = await fetch('/api/search/advanced', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(searchData)
-                });
-                const result = await response.json();
-                showAdvancedResults(result);
-            } catch (error) {
-                showError('Failed to perform advanced search. Please try again.');
-            }
-        }
-
-        function showLoading() {
-            const resultsSection = document.getElementById('results-section');
+        function displayResults(emails) {
+            searchResults = emails;
+            const resultsContainer = document.getElementById('results');
             const emailList = document.getElementById('email-list');
+            const emailCount = document.getElementById('email-count');
             
-            resultsSection.style.display = 'block';
-            emailList.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Searching for emails...</p>
-                </div>
-            `;
-        }
-
-        function showResults(result) {
-            const resultsSection = document.getElementById('results-section');
-            const emailList = document.getElementById('email-list');
-            const resultsCount = document.getElementById('results-count');
-            const createCampaignBtn = document.getElementById('create-campaign-btn');
-            const exportBtn = document.getElementById('export-btn');
-            const organizeBtn = document.getElementById('organize-btn');
+            emailCount.textContent = emails.length;
             
-            if (result.success && result.emails && result.emails.length > 0) {
-                resultsCount.textContent = `${result.emails.length} emails`;
-                createCampaignBtn.style.display = 'inline-block';
-                exportBtn.style.display = 'inline-block';
-                organizeBtn.style.display = 'inline-block';
-                
-                // Convert emails to structured data with company information
-                currentResults = result.emails.map(email => {
-                    const domain = email.split('@')[1];
-                    const isVerified = result.verification_results && result.verification_results[email];
-                    return {
-                        email: email,
-                        domain: domain,
-                        verified: isVerified,
-                        company_name: domain.split('.')[0].replace(/[0-9]/g, '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                        industry: result.industry || 'Unknown',
-                        company_size: 'Unknown',
-                        revenue: 'Unknown',
-                        location: result.location || 'Unknown',
-                        employees: 'Unknown'
-                    };
-                });
-                
-                filteredResults = [...currentResults];
-                selectedEmails.clear();
-                
-                // Display organized results
-                displayFilteredResults();
-                
+            if (emails.length === 0) {
+                emailList.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">No email addresses found. Try a different search.</p>';
             } else {
-                resultsCount.textContent = '0 emails';
-                createCampaignBtn.style.display = 'none';
-                exportBtn.style.display = 'none';
-                organizeBtn.style.display = 'none';
-                emailList.innerHTML = `
-                    <div class="loading">
-                        <p>No emails found. Try different search criteria.</p>
-                    </div>
-                `;
-            }
-        }
-
-        function showInfiniteResults(result) {
-            const resultsSection = document.getElementById('results-section');
-            const emailList = document.getElementById('email-list');
-            const resultsCount = document.getElementById('results-count');
-            const createCampaignBtn = document.getElementById('create-campaign-btn');
-            const exportBtn = document.getElementById('export-btn');
-            
-            if (result.success && result.emails && result.emails.length > 0) {
-                resultsCount.textContent = `${result.emails_returned || result.emails.length} emails found`;
-                createCampaignBtn.style.display = 'inline-block';
-                exportBtn.style.display = 'inline-block';
-                
-                let html = '';
-                
-                if (result.sources_used && result.sources_used.length > 0) {
-                    html += '<div style="margin-bottom: 2rem; padding: 1rem; background: var(--gradient-premium); color: white; border-radius: 8px;">';
-                    html += '<h3 style="margin-bottom: 1rem;">Sources Used:</h3>';
-                    html += '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">';
-                    result.sources_used.forEach(source => {
-                        html += `<span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.5rem; border-radius: 15px; font-size: 0.9rem;">${source}</span>`;
-                    });
-                    html += '</div></div>';
-                }
-                
-                html += result.emails.map(email => `
+                emailList.innerHTML = emails.map(email => `
                     <div class="email-item">
                         <div class="email-info">
-                            <div class="email-address">${email}</div>
-                            <div class="email-domain">${email.split('@')[1]}</div>
+                            <div class="email-address">${email.email}</div>
+                            <div class="email-domain">${email.domain}</div>
                         </div>
                         <div class="email-actions">
-                            <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
-                            <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
+                            <button class="action-btn" onclick="copyEmail('${email.email}')">Copy</button>
+                            <button class="action-btn" onclick="addToCampaign('${email.email}')">Add to Campaign</button>
                         </div>
                     </div>
                 `).join('');
-                
-                emailList.innerHTML = html;
-            } else {
-                resultsCount.textContent = '0 emails';
-                createCampaignBtn.style.display = 'none';
-                exportBtn.style.display = 'none';
-                emailList.innerHTML = `
-                    <div class="loading">
-                        <p>No emails found in the infinite database. Try different search criteria.</p>
-                    </div>
-                `;
             }
-        }
-
-        function showAdvancedResults(result) {
-            // Similar to showInfiniteResults but with additional targeting info
-            showInfiniteResults(result);
-        }
-
-        function showError(message) {
-            const resultsSection = document.getElementById('results-section');
-            const emailList = document.getElementById('email-list');
             
-            resultsSection.style.display = 'block';
-            emailList.innerHTML = `
-                <div class="loading">
-                    <p style="color: var(--danger);">${message}</p>
-                </div>
-            `;
+            resultsContainer.style.display = 'block';
         }
 
-        function createCampaign() {
-            const emailItems = document.querySelectorAll('.email-address');
-            const emails = Array.from(emailItems).map(item => item.textContent);
-            localStorage.setItem('campaign_emails', JSON.stringify(emails));
-            window.location.href = '/campaigns/new';
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
         }
 
-        function exportEmails() {
-            const emailItems = document.querySelectorAll('.email-address');
-            const emails = Array.from(emailItems).map(item => item.textContent);
-            
-            const csvContent = "data:text/csv;charset=utf-8," + emails.join('\n');
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "emails.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
         }
 
         function copyEmail(email) {
             navigator.clipboard.writeText(email).then(() => {
-                const btn = event.target;
-                const originalText = btn.textContent;
-                btn.textContent = 'Copied!';
-                btn.style.background = '#28a745';
-                
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.style.background = '';
-                }, 2000);
+                alert('Email copied to clipboard!');
             });
         }
 
-        function saveEmail(email) {
-            const btn = event.target;
-            const originalText = btn.textContent;
-            btn.textContent = 'Saved!';
-            btn.style.background = '#28a745';
-            
-            setTimeout(() => {
-                btn.textContent = originalText;
-                btn.style.background = '';
-            }, 2000);
+        function addToCampaign(email) {
+            // Redirect to campaign creation with pre-filled email
+            window.location.href = `/campaigns/new?email=${encodeURIComponent(email)}`;
         }
 
-        // Global variables for results management
-        let currentResults = [];
-        let filteredResults = [];
-        let selectedEmails = new Set();
-        
-        // Preloaded company data
-        const preloadedCompanies = [
-            'OutreachPilotPro', 'Google', 'Microsoft', 'Apple', 'Amazon', 'Meta', 'Netflix', 'Salesforce', 'Adobe', 'Oracle',
-            'IBM', 'Slack', 'Zoom', 'Dropbox', 'Box', 'Asana', 'Trello', 'Notion', 'Figma', 'Canva', 'HubSpot', 'Stripe',
-            'Airbnb', 'Uber', 'Lyft', 'DoorDash', 'Instacart', 'Robinhood', 'Coinbase', 'Plaid', 'Discord', 'OpenAI',
-            'Anthropic', 'Databricks', 'Snowflake', 'Palantir', 'UiPath', 'C3.ai', 'Scale AI', 'Hugging Face',
-            'TechCorp Solutions', 'EcoTech Innovations', 'SaaSFlow Inc', 'DataViz Pro', 'CloudSecure Solutions',
-            'FashionForward', 'GreenHome Store', 'TechGadgets Pro', 'PetParadise', 'SportsElite',
-            'Wellness Medical Group', 'Mental Health Partners', 'DentalCare Plus', 'PharmaInnovate', 'MedDevice Solutions',
-            'Green Finance Bank', 'FinTech Innovations', 'Investment Partners LLC', 'Secure Insurance Co', 'Credit Union First'
-        ];
-        
-        // Preloaded cities by state
-        const citiesByState = {
-            'CA': ['Los Angeles', 'San Francisco', 'San Diego', 'San Jose', 'Sacramento', 'Oakland', 'Fresno', 'Long Beach'],
-            'NY': ['New York City', 'Buffalo', 'Rochester', 'Yonkers', 'Syracuse', 'Albany', 'New Rochelle'],
-            'TX': ['Houston', 'San Antonio', 'Dallas', 'Austin', 'Fort Worth', 'El Paso', 'Arlington', 'Corpus Christi'],
-            'FL': ['Jacksonville', 'Miami', 'Tampa', 'Orlando', 'St. Petersburg', 'Hialeah', 'Tallahassee', 'Fort Lauderdale'],
-            'IL': ['Chicago', 'Aurora', 'Rockford', 'Joliet', 'Naperville', 'Springfield', 'Peoria', 'Elgin'],
-            'PA': ['Philadelphia', 'Pittsburgh', 'Allentown', 'Erie', 'Reading', 'Scranton', 'Bethlehem', 'Lancaster'],
-            'OH': ['Columbus', 'Cleveland', 'Cincinnati', 'Toledo', 'Akron', 'Dayton', 'Parma', 'Canton'],
-            'GA': ['Atlanta', 'Augusta', 'Columbus', 'Macon', 'Savannah', 'Athens', 'Sandy Springs', 'Roswell'],
-            'NC': ['Charlotte', 'Raleigh', 'Greensboro', 'Durham', 'Winston-Salem', 'Fayetteville', 'Cary', 'Wilmington'],
-            'MI': ['Detroit', 'Grand Rapids', 'Warren', 'Sterling Heights', 'Lansing', 'Ann Arbor', 'Flint', 'Dearborn']
-        };
-        
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-            populateCompanyList();
-            setupStateCityMapping();
-        });
-        
-        // Populate company datalist
-        function populateCompanyList() {
-            const companyList = document.getElementById('company-list');
-            preloadedCompanies.forEach(company => {
-                const option = document.createElement('option');
-                option.value = company;
-                companyList.appendChild(option);
-            });
-        }
-        
-        // Setup state-city mapping
-        function setupStateCityMapping() {
-            const stateSelect = document.getElementById('basic-state');
-            const citySelect = document.getElementById('basic-city');
-            
-            stateSelect.addEventListener('change', function() {
-                const selectedState = this.value;
-                citySelect.innerHTML = '<option value="">Select City</option>';
-                
-                if (citiesByState[selectedState]) {
-                    citiesByState[selectedState].forEach(city => {
-                        const option = document.createElement('option');
-                        option.value = city;
-                        option.textContent = city;
-                        citySelect.appendChild(option);
-                    });
-                }
-            });
-        }
-        
-        // Organization functions
-        function showOrganizationPanel() {
-            const panel = document.getElementById('organization-panel');
-            const summary = document.getElementById('results-summary');
-            panel.style.display = 'block';
-            summary.style.display = 'block';
-            updateResultsSummary();
-        }
-        
-        function applyFilters() {
-            const sizeFilter = document.getElementById('filter-size').value;
-            const revenueFilter = document.getElementById('filter-revenue').value;
-            const locationFilter = document.getElementById('filter-location').value;
-            const sortBy = document.getElementById('sort-by').value;
-            
-            filteredResults = currentResults.filter(item => {
-                let matches = true;
-                
-                if (sizeFilter && item.company_size !== sizeFilter) matches = false;
-                if (revenueFilter && item.revenue !== revenueFilter) matches = false;
-                if (locationFilter && item.location !== locationFilter) matches = false;
-                
-                return matches;
-            });
-            
-            // Sort results
-            filteredResults.sort((a, b) => {
-                switch(sortBy) {
-                    case 'company': return a.company_name.localeCompare(b.company_name);
-                    case 'size': return getSizeValue(a.company_size) - getSizeValue(b.company_size);
-                    case 'revenue': return getRevenueValue(a.revenue) - getRevenueValue(b.revenue);
-                    case 'location': return a.location.localeCompare(b.location);
-                    case 'industry': return a.industry.localeCompare(b.industry);
-                    default: return 0;
-                }
-            });
-            
-            displayFilteredResults();
-            updateResultsSummary();
-        }
-        
-        function clearFilters() {
-            document.getElementById('filter-size').value = '';
-            document.getElementById('filter-revenue').value = '';
-            document.getElementById('filter-location').value = '';
-            document.getElementById('sort-by').value = 'company';
-            
-            filteredResults = [...currentResults];
-            displayFilteredResults();
-            updateResultsSummary();
-        }
-        
-        function clearBasicForm() {
-            document.getElementById('basic-url').value = '';
-            document.getElementById('basic-company').value = '';
-            document.getElementById('basic-industry').value = '';
-            document.getElementById('basic-state').value = '';
-            document.getElementById('basic-city').value = '';
-        }
-        
-        function selectAllEmails() {
-            selectedEmails.clear();
-            filteredResults.forEach(item => {
-                selectedEmails.add(item.email);
-            });
-            displayFilteredResults();
-            updateResultsSummary();
-        }
-        
-        function deselectAllEmails() {
-            selectedEmails.clear();
-            displayFilteredResults();
-            updateResultsSummary();
-        }
-        
-        function saveEmailList() {
-            const listName = document.getElementById('save-list-name').value;
-            if (!listName.trim()) {
-                alert('Please enter a list name');
+        function exportEmails() {
+            if (searchResults.length === 0) {
+                alert('No emails to export');
                 return;
             }
             
-            const selectedEmailsList = Array.from(selectedEmails);
-            if (selectedEmailsList.length === 0) {
-                alert('Please select emails to save');
-                return;
-            }
+            const csv = [
+                ['Email', 'Domain', 'Source'],
+                ...searchResults.map(email => [email.email, email.domain, email.source || ''])
+            ].map(row => row.join(',')).join('\n');
             
-            // Save to localStorage for now (in production, save to database)
-            const savedLists = JSON.parse(localStorage.getItem('savedEmailLists') || '{}');
-            savedLists[listName] = {
-                emails: selectedEmailsList,
-                count: selectedEmailsList.length,
-                created: new Date().toISOString(),
-                companies: filteredResults.filter(item => selectedEmails.has(item.email))
-            };
-            localStorage.setItem('savedEmailLists', JSON.stringify(savedLists));
-            
-            alert(`List "${listName}" saved with ${selectedEmailsList.length} emails!`);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'emails.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
         }
-        
-        function displayFilteredResults() {
-            const emailList = document.getElementById('email-list');
-            
-            if (filteredResults.length === 0) {
-                emailList.innerHTML = '<div class="loading"><p>No results match your filters.</p></div>';
-                return;
-            }
-            
-            // Group by company
-            const companies = {};
-            filteredResults.forEach(item => {
-                if (!companies[item.company_name]) {
-                    companies[item.company_name] = {
-                        name: item.company_name,
-                        domain: item.domain,
-                        industry: item.industry,
-                        size: item.company_size,
-                        revenue: item.revenue,
-                        location: item.location,
-                        employees: item.employees,
-                        emails: []
-                    };
-                }
-                companies[item.company_name].emails.push(item.email);
-            });
-            
-            let html = '';
-            Object.values(companies).forEach(company => {
-                const isSelected = company.emails.every(email => selectedEmails.has(email));
-                const selectedCount = company.emails.filter(email => selectedEmails.has(email)).length;
-                
-                html += `
-                    <div class="company-group" style="margin-bottom: 2rem; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-                        <div class="company-header" style="background: #f8f9fa; padding: 1rem; border-bottom: 1px solid #e0e0e0;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <h4 style="margin: 0 0 0.5rem 0;">${company.name}</h4>
-                                    <div style="display: flex; gap: 1rem; font-size: 0.9rem; color: #666;">
-                                        <span><strong>Industry:</strong> ${company.industry || 'Unknown'}</span>
-                                        <span><strong>Size:</strong> ${company.size || 'Unknown'}</span>
-                                        <span><strong>Revenue:</strong> ${company.revenue || 'Unknown'}</span>
-                                        <span><strong>Location:</strong> ${company.location || 'Unknown'}</span>
-                                        <span><strong>Employees:</strong> ${company.employees || 'Unknown'}</span>
-                                    </div>
-                                </div>
-                                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="checkbox" ${isSelected ? 'checked' : ''} 
-                                               onchange="toggleCompanySelection('${company.name}')" style="margin: 0;">
-                                        <span>Select All (${company.emails.length})</span>
-                                    </label>
-                                    <span style="color: #666;">${selectedCount}/${company.emails.length} selected</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="company-emails">
-                            ${company.emails.map(email => {
-                                const emailData = filteredResults.find(item => item.email === email);
-                                const isVerified = emailData ? emailData.verified : false;
-                                return `
-                                    <div class="email-item" style="padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;">
-                                        <div class="email-info">
-                                            <div class="email-address">
-                                                ${email}
-                                                ${isVerified ? '<span class="verification-badge" style="margin-left: 0.5rem; background: #28a745; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600;">✓ Verified</span>' : ''}
-                                            </div>
-                                            <div class="email-domain">${email.split('@')[1]}</div>
-                                        </div>
-                                        <div class="email-actions" style="display: flex; gap: 0.5rem; align-items: center;">
-                                            <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                                <input type="checkbox" ${selectedEmails.has(email) ? 'checked' : ''} 
-                                                       onchange="toggleEmailSelection('${email}')" style="margin: 0;">
-                                                <span>Select</span>
-                                            </label>
-                                            <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
-                                            <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    </div>
-                `;
-            });
-            
-            emailList.innerHTML = html;
-        }
-        
-        function toggleCompanySelection(companyName) {
-            const company = filteredResults.filter(item => item.company_name === companyName);
-            const companyEmails = company.map(item => item.email);
-            const allSelected = companyEmails.every(email => selectedEmails.has(email));
-            
-            if (allSelected) {
-                companyEmails.forEach(email => selectedEmails.delete(email));
-            } else {
-                companyEmails.forEach(email => selectedEmails.add(email));
-            }
-            
-            displayFilteredResults();
-            updateResultsSummary();
-        }
-        
-        function toggleEmailSelection(email) {
-            if (selectedEmails.has(email)) {
-                selectedEmails.delete(email);
-            } else {
-                selectedEmails.add(email);
-            }
-            
-            displayFilteredResults();
-            updateResultsSummary();
-        }
-        
-        function updateResultsSummary() {
-            const companies = new Set(filteredResults.map(item => item.company_name));
-            const emails = filteredResults.length;
-            const verified = filteredResults.filter(item => item.verified).length;
-            const selected = selectedEmails.size;
-            
-            // Calculate average company size
-            const sizeValues = filteredResults.map(item => getSizeValue(item.company_size)).filter(val => val > 0);
-            const avgSize = sizeValues.length > 0 ? Math.round(sizeValues.reduce((a, b) => a + b, 0) / sizeValues.length) : 0;
-            
-            document.getElementById('summary-companies').textContent = companies.size;
-            document.getElementById('summary-emails').textContent = emails;
-            document.getElementById('summary-verified').textContent = verified;
-            document.getElementById('summary-selected').textContent = selected;
-            document.getElementById('summary-avg-size').textContent = avgSize > 0 ? `${avgSize} employees` : 'Unknown';
-        }
-        
-        function getSizeValue(size) {
-            const sizeMap = {
-                'startup': 25,
-                'small': 125,
-                'medium': 600,
-                'large': 2000
-            };
-            return sizeMap[size] || 0;
-        }
-        
-        function getRevenueValue(revenue) {
-            const revenueMap = {
-                'under-1m': 500000,
-                '1m-10m': 5500000,
-                '10m-50m': 30000000,
-                '50m-100m': 75000000,
-                'over-100m': 200000000
-            };
-            return revenueMap[revenue] || 0;
-        }
-        
-        // Populate subcategories based on industry
-        document.getElementById('advanced-industry').addEventListener('change', function() {
-            const industry = this.value;
-            const subcategorySelect = document.getElementById('advanced-subcategory');
-            subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
-            
-            const subcategories = {
-                'ecommerce': ['Fashion & Apparel', 'Electronics', 'Home & Garden', 'Beauty & Personal Care', 'Food & Beverage', 'Sports & Outdoors', 'Books & Media', 'Jewelry & Accessories', 'Pet Supplies', 'Automotive Parts'],
-                'saas': ['CRM Software', 'Project Management', 'Marketing Automation', 'Accounting Software', 'HR Software', 'E-commerce Platforms', 'Analytics Tools', 'Communication Tools', 'Security Software', 'Development Tools'],
-                'healthcare': ['Primary Care', 'Specialty Medicine', 'Mental Health', 'Dental Care', 'Pharmaceuticals', 'Medical Devices', 'Telemedicine', 'Health Insurance', 'Medical Research', 'Wellness & Fitness'],
-                'finance': ['Commercial Banking', 'Investment Banking', 'Insurance', 'Fintech', 'Credit Unions', 'Mortgage Lending', 'Wealth Management', 'Payment Processing', 'Cryptocurrency', 'Financial Planning'],
-                'real-estate': ['Residential Sales', 'Commercial Real Estate', 'Property Management', 'Real Estate Development', 'Mortgage Lending', 'Real Estate Investment', 'Property Appraisal', 'Real Estate Law', 'Construction', 'Architecture'],
-                'education': ['K-12 Schools', 'Higher Education', 'Online Learning', 'Corporate Training', 'Language Learning', 'Test Preparation', 'Educational Technology', 'Special Education', 'Vocational Training', 'Educational Consulting'],
-                'consulting': ['Management Consulting', 'IT Consulting', 'Financial Consulting', 'HR Consulting', 'Marketing Consulting', 'Strategy Consulting', 'Operations Consulting', 'Technology Consulting', 'Business Process', 'Change Management'],
-                'marketing': ['Digital Marketing', 'Content Marketing', 'Social Media Marketing', 'Email Marketing', 'SEO/SEM', 'Branding', 'Public Relations', 'Event Marketing', 'Influencer Marketing', 'Marketing Analytics'],
-                'legal': ['Corporate Law', 'Criminal Law', 'Family Law', 'Real Estate Law', 'Intellectual Property', 'Employment Law', 'Tax Law', 'Immigration Law', 'Personal Injury', 'Bankruptcy Law'],
-                'manufacturing': ['Automotive', 'Electronics', 'Food & Beverage', 'Textiles', 'Chemicals', 'Pharmaceuticals', 'Aerospace', 'Construction Materials', 'Medical Devices', 'Consumer Goods'],
-                'retail': ['Department Stores', 'Specialty Retail', 'Convenience Stores', 'Online Retail', 'Fashion Retail', 'Electronics Retail', 'Home Improvement', 'Grocery Stores', 'Jewelry Stores', 'Sporting Goods'],
-                'restaurant': ['Fast Food', 'Casual Dining', 'Fine Dining', 'Catering', 'Food Trucks', 'Coffee Shops', 'Bakeries', 'Pizza Restaurants', 'Asian Cuisine', 'Mexican Cuisine'],
-                'fitness': ['Gyms & Health Clubs', 'Yoga Studios', 'Personal Training', 'CrossFit', 'Pilates', 'Martial Arts', 'Swimming', 'Tennis', 'Golf', 'Outdoor Fitness'],
-                'beauty': ['Hair Salons', 'Nail Salons', 'Spa Services', 'Cosmetics', 'Skincare', 'Hair Care', 'Makeup Artists', 'Beauty Products', 'Medical Spa', 'Aesthetics'],
-                'automotive': ['Car Dealerships', 'Auto Repair', 'Auto Parts', 'Car Rental', 'Auto Insurance', 'Car Wash', 'Towing Services', 'Auto Financing', 'Motorcycle Dealers', 'RV Dealers'],
-                'travel': ['Hotels & Resorts', 'Travel Agencies', 'Airlines', 'Cruise Lines', 'Tour Operators', 'Vacation Rentals', 'Car Rental', 'Travel Insurance', 'Adventure Travel', 'Business Travel'],
-                'nonprofit': ['Education', 'Healthcare', 'Environment', 'Animal Welfare', 'Human Rights', 'Poverty Relief', 'Arts & Culture', 'Religious Organizations', 'Community Development', 'Disaster Relief'],
-                'government': ['Federal Government', 'State Government', 'Local Government', 'Public Safety', 'Education', 'Healthcare', 'Transportation', 'Environmental Protection', 'Economic Development', 'Social Services']
-            };
-            
-            if (subcategories[industry]) {
-                subcategories[industry].forEach(sub => {
-                    const option = document.createElement('option');
-                    option.value = sub.toLowerCase().replace(/\s+/g, '-');
-                    option.textContent = sub;
-                    subcategorySelect.appendChild(option);
-                });
-            }
-        });
     </script>
 </body>
 </html> 
