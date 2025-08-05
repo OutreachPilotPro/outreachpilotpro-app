@@ -9,12 +9,27 @@ import queue
 import threading
 from datetime import datetime, timedelta
 import json
-import redis
 from jinja2 import Template
+
+# Make redis optional
+try:
+    import redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+    print("Warning: Redis not available. Rate limiting will be disabled.")
 
 class BulkEmailSender:
     def __init__(self, redis_url="redis://localhost:6379"):
-        self.redis_client = redis.from_url(redis_url)
+        if REDIS_AVAILABLE:
+            try:
+                self.redis_client = redis.from_url(redis_url)
+            except Exception as e:
+                print(f"Warning: Could not connect to Redis: {e}")
+                self.redis_client = None
+        else:
+            self.redis_client = None
+            
         self.sending_queue = queue.Queue()
         self.smtp_pools = {}
         
@@ -149,7 +164,10 @@ class BulkEmailSender:
                     break
                 
                 # Check rate limits
-                self._check_rate_limits()
+                if not self._check_rate_limits():
+                    print(f"Rate limit exceeded for campaign {campaign_id}. Waiting...")
+                    time.sleep(self.config['retry_delay']) # Wait before retrying
+                    continue
                 
                 # Send emails in parallel
                 futures = []
@@ -288,15 +306,18 @@ class BulkEmailSender:
     
     def _check_rate_limits(self):
         """Check and enforce rate limits"""
+        if not self.redis_client:
+            print("Rate limiting is disabled because Redis is not available.")
+            return True  # Allow sending if no rate limiting
+
         # Hourly rate limit
         hourly_key = f"rate_limit:hourly:{datetime.now().strftime('%Y%m%d%H')}"
         hourly_count = self.redis_client.incr(hourly_key)
         self.redis_client.expire(hourly_key, 3600)
         
         if hourly_count > self.config['max_sends_per_hour']:
-            # Wait until next hour
-            sleep_time = 3600 - (datetime.now().minute * 60 + datetime.now().second)
-            time.sleep(sleep_time)
+            print(f"Hourly rate limit exceeded: {hourly_count}/{self.config['max_sends_per_hour']}")
+            return False
         
         # Daily rate limit
         daily_key = f"rate_limit:daily:{datetime.now().strftime('%Y%m%d')}"
@@ -304,7 +325,10 @@ class BulkEmailSender:
         self.redis_client.expire(daily_key, 86400)
         
         if daily_count > self.config['max_sends_per_day']:
-            raise Exception("Daily sending limit reached")
+            print(f"Daily rate limit exceeded: {daily_count}/{self.config['max_sends_per_day']}")
+            return False
+        
+        return True
     
     def _extract_company_from_email(self, email):
         """Extract company name from email domain"""
