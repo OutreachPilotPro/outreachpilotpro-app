@@ -7,6 +7,7 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 import os
 import sqlite3
 from datetime import datetime
+import stripe
 
 app = Flask(__name__)
 
@@ -14,6 +15,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['STRIPE_SECRET_KEY'] = os.environ.get('STRIPE_SECRET_KEY', '')
 app.config['STRIPE_PUBLISHABLE_KEY'] = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
+
+# Initialize Stripe
+if app.config['STRIPE_SECRET_KEY']:
+    stripe.api_key = app.config['STRIPE_SECRET_KEY']
 
 # Database connection helper
 def get_db_connection():
@@ -124,6 +129,95 @@ def subscription_page():
                          subscription=None,
                          usage_stats={},
                          plans=plans)
+
+@app.route("/subscription/upgrade/<plan_id>")
+def upgrade_subscription(plan_id):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
+    user_id = session['user']['id']
+    
+    # Check if Stripe is configured
+    if not app.config['STRIPE_SECRET_KEY']:
+        flash('Stripe is not configured. Please contact support.', 'error')
+        return redirect(url_for('subscription_page'))
+    
+    try:
+        # Define plan prices (Stripe price IDs)
+        plan_prices = {
+            "starter": "price_1RsBiFLeRd30DB0ZUMfZIGCZ",
+            "professional": "price_1RsBiGLeRd30DB0Z7Ak9FUwB", 
+            "enterprise": "price_1RsBiGLeRd30DB0ZMhbFVQsi"
+        }
+        
+        if plan_id not in plan_prices:
+            flash('Invalid plan selected.', 'error')
+            return redirect(url_for('subscription_page'))
+        
+        # Create Stripe checkout session
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price': plan_prices[plan_id],
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=request.host_url + 'subscription/success?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=request.host_url + 'subscription',
+            metadata={
+                'user_id': user_id,
+                'plan_id': plan_id
+            }
+        )
+        
+        return redirect(checkout_session.url, code=303)
+        
+    except Exception as e:
+        print(f"Error creating checkout session: {e}")
+        flash('Error creating checkout session. Please try again.', 'error')
+        return redirect(url_for('subscription_page'))
+
+@app.route("/subscription/success")
+def subscription_success():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
+    session_id = request.args.get('session_id')
+    
+    if not session_id:
+        flash('No session ID provided.', 'error')
+        return redirect(url_for('subscription_page'))
+    
+    try:
+        # Retrieve the checkout session
+        checkout_session = stripe.checkout.Session.retrieve(session_id)
+        
+        if checkout_session.payment_status == 'paid':
+            # Update user subscription in database
+            conn = get_db_connection()
+            c = conn.cursor()
+            
+            # Get plan_id from metadata
+            plan_id = checkout_session.metadata.get('plan_id', 'starter')
+            
+            # Update or create subscription
+            c.execute("""
+                INSERT OR REPLACE INTO subscriptions (user_id, plan_id, status)
+                VALUES (?, ?, 'active')
+            """, (session['user']['id'], plan_id))
+            
+            conn.commit()
+            conn.close()
+            
+            flash('Subscription upgraded successfully!', 'success')
+        else:
+            flash('Payment was not completed.', 'error')
+            
+    except Exception as e:
+        print(f"Error processing subscription success: {e}")
+        flash('Error processing subscription. Please contact support.', 'error')
+    
+    return redirect(url_for('subscription_page'))
 
 @app.route("/logout")
 def logout():
