@@ -1,8 +1,8 @@
 # Environment variables
 .env
 
-# Database files
-*.db
+# Database files (but keep the main database)
+outreachpilot.db
 instance/
 
 # Python cache
@@ -29,11 +29,15 @@ Thumbs.db
 # Logs
 *.log
 
-# Credentials
+# Credentials (but keep template files)
 credentials.json
 *.pem
 *.key
 
 # Temporary files
 *.tmp
-*.temp 
+*.temp
+
+# WAL files (SQLite write-ahead logging)
+*.db-shm
+*.db-wal 
