@@ -2,8 +2,8 @@ services:
   - type: web
     name: outreachpilotpro-v2
     env: python
-    buildCommand: pip install -r requirements_minimal.txt
-    startCommand: gunicorn app_minimal:app
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
