@@ -169,37 +169,18 @@ except Exception as e:
 # Initialize consolidated email finder service
 email_finder = EmailFinder()
 
-@app.route("/")
+@app.route("/", endpoint='home')
 def home():
     return render_template("index.html")
 
-# Route aliases for templates
-@app.route("/home")
-def home_alias():
-    return redirect(url_for('home'))
+# Route aliases removed - using endpoint parameter instead for cleaner code
 
-@app.route("/scrape-page")
-def scrape_page_alias():
-    return redirect(url_for('scrape_page'))
-
-@app.route("/campaigns-page")
-def campaigns_page_alias():
-    return redirect(url_for('campaigns_page'))
-
-@app.route("/subscription-page")
-def subscription_page_alias():
-    return redirect(url_for('subscription_page'))
-
-@app.route("/new-campaign")
-def new_campaign_alias():
-    return redirect(url_for('new_campaign'))
-
-@app.route("/live-demo")
+@app.route("/live-demo", endpoint='live_demo')
 def live_demo():
     """Live demo page for email finding"""
     return render_template("live_demo.html")
 
-@app.route("/about")
+@app.route("/about", endpoint='about')
 def about():
     """About page"""
     return render_template("about.html")
@@ -214,7 +195,7 @@ def careers():
     """Careers page"""
     return render_template("careers.html")
 
-@app.route("/contact")
+@app.route("/contact", endpoint='contact')
 def contact():
     """Contact page"""
     return render_template("contact.html")
@@ -229,12 +210,12 @@ def integrations():
     """Integrations page"""
     return render_template("integrations.html")
 
-@app.route("/features")
+@app.route("/features", endpoint='features')
 def features():
     """Features page"""
     return render_template("features.html")
 
-@app.route("/pricing")
+@app.route("/pricing", endpoint='pricing')
 def pricing():
     """Pricing page"""
     return render_template("pricing.html")
@@ -436,22 +417,22 @@ def dashboard():
                          recent_campaigns=recent_campaigns,
                          recent_emails=recent_emails)
 
-@app.route("/scrape")
-def scrape_page():
+@app.route("/scrape", endpoint='scrape_page')
+def scrape():
     """Email scraping page"""
     if 'user' not in session:
         return redirect(url_for('login'))
     return render_template("scrape.html")
 
-@app.route("/scrape-enhanced")
-def scrape_enhanced_page():
+@app.route("/scrape-enhanced", endpoint='scrape_enhanced_page')
+def scrape_enhanced():
     """Enhanced email scraping page"""
     if 'user' not in session:
         return redirect(url_for('login'))
     return render_template("scrape_enhanced.html")
 
-@app.route("/campaigns")
-def campaigns_page():
+@app.route("/campaigns", endpoint='campaigns_page')
+def campaigns():
     """Campaigns management page"""
     if 'user' not in session:
         return redirect(url_for('login'))
@@ -467,8 +448,8 @@ def campaigns_page():
     
     return render_template("campaigns.html", campaigns=campaigns)
 
-@app.route("/campaigns/new", methods=['GET', 'POST'])
-def new_campaign():
+@app.route("/campaigns/new", methods=['GET', 'POST'], endpoint='new_campaign')
+def create_new_campaign():
     """Create new campaign"""
     if 'user' not in session:
         return redirect(url_for('login'))
@@ -540,8 +521,8 @@ def send_campaign(campaign_id):
     
     return jsonify({'success': True, 'emails_sent': len(email_list)})
 
-@app.route("/subscription")
-def subscription_page():
+@app.route("/subscription", endpoint='subscription_page')
+def subscription():
     """Subscription management page"""
     if 'user' not in session:
         return redirect(url_for('login'))
@@ -678,12 +659,12 @@ def cancel_subscription():
         print(f"Error cancelling subscription: {e}")
         return jsonify({'error': 'Error cancelling subscription'}), 500
 
-@app.route("/terms")
+@app.route("/terms", endpoint='terms')
 def terms():
     """Terms of service page"""
     return render_template("terms.html")
 
-@app.route("/privacy")
+@app.route("/privacy", endpoint='privacy')
 def privacy():
     """Privacy policy page"""
     return render_template("privacy.html")
