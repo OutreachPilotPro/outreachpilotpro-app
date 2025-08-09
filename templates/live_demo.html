@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Demo - OutreachPilotPro</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <style>
         * {
             margin: 0;
@@ -24,9 +26,9 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f8f9fa;
             color: #333;
+            line-height: 1.6;
         }
         
-        /* Navigation */
         .navbar {
             background: white;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -34,6 +36,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
         
         .logo {
@@ -42,7 +47,6 @@
             background: var(--gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-decoration: none;
         }
         
         .nav-links {
@@ -62,145 +66,289 @@
             color: var(--primary);
         }
         
-        /* Main Content */
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 2rem;
         }
         
-        .demo-header {
+        .hero-section {
             text-align: center;
+            padding: 4rem 0;
+            background: white;
+            border-radius: 15px;
             margin-bottom: 3rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
         }
         
-        .demo-header h1 {
+        .hero-section h1 {
             font-size: 3rem;
+            margin-bottom: 1rem;
             background: var(--gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
         }
         
-        .demo-subtitle {
+        .hero-section p {
             font-size: 1.2rem;
             color: #666;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+        
+        .demo-section {
+            background: white;
+            border-radius: 15px;
+            padding: 3rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .demo-section h2 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: #333;
+        }
+        
+        .demo-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
             margin-bottom: 2rem;
         }
         
-        .demo-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 2rem;
-            margin-bottom: 3rem;
+        .demo-form input,
+        .demo-form select {
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
         }
         
-        .demo-card {
-            background: white;
+        .demo-form input:focus,
+        .demo-form select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+        
+        .demo-btn {
+            background: var(--gradient);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            grid-column: 1 / -1;
+        }
+        
+        .demo-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .demo-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .results-section {
+            background: #f8f9fa;
             border-radius: 15px;
             padding: 2rem;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+            display: none;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .results-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .results-stats {
+            display: flex;
+            gap: 2rem;
+            color: #666;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .results-list {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .result-item {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            border-left: 4px solid var(--primary);
             transition: transform 0.3s ease;
         }
         
-        .demo-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .demo-card h3 {
-            color: #333;
-            margin-bottom: 1rem;
-            font-size: 1.5rem;
-        }
-        
-        .demo-example {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-        }
-        
-        .demo-example h4 {
-            color: var(--primary);
-            margin-bottom: 0.5rem;
-        }
-        
-        .demo-results {
-            background: #e8f5e8;
-            border: 1px solid #4CAF50;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-top: 1rem;
-        }
-        
-        .demo-results h5 {
-            color: #2e7d32;
-            margin-bottom: 0.5rem;
-        }
-        
-        .email-list {
-            list-style: none;
-        }
-        
-        .email-list li {
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        .email-list li:last-child {
-            border-bottom: none;
-        }
-        
-        .try-demo-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            margin-top: 1rem;
-        }
-        
-        .try-demo-btn:hover {
-            background: var(--primary-dark);
+        .result-item:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .result-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .result-title {
+            color: var(--primary);
+            font-weight: 500;
+        }
+        
+        .result-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .detail-label {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .detail-value {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .confidence-badge {
+            background: #e8f5e8;
+            color: var(--primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .loading-section {
+            text-align: center;
+            padding: 3rem;
+            display: none;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .loading-steps {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .step {
+            background: #e8f5e8;
+            color: var(--primary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
         }
         
         .features-section {
             background: white;
             border-radius: 15px;
-            padding: 2rem;
-            margin-top: 3rem;
+            padding: 3rem;
+            margin-bottom: 3rem;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .features-section h2 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: #333;
         }
         
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 2rem;
-            margin-top: 2rem;
         }
         
-        .feature-item {
+        .feature-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 2rem;
             text-align: center;
-            padding: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
         }
         
         .feature-icon {
             font-size: 3rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
         
         .feature-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
             color: #333;
         }
         
@@ -208,153 +356,321 @@
             color: #666;
             line-height: 1.6;
         }
+        
+        .cta-section {
+            background: var(--gradient);
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            color: white;
+        }
+        
+        .cta-section h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .cta-section p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .cta-btn {
+            background: white;
+            color: var(--primary);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s ease;
+        }
+        
+        .cta-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .cta-btn.secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .demo-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-stats {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .result-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
     </style>
 </head>
 <body>
     <nav class="navbar">
-        <a href="/" class="logo">OutreachPilotPro</a>
+        <div class="logo">
+            <a href="{{ url_for('home') }}" style="text-decoration: none; color: inherit;">OutreachPilotPro</a>
+        </div>
         <div class="nav-links">
-            <a href="/">Home</a>
-            <a href="/scrape">Email Finder</a>
-            <a href="/campaigns">Campaigns</a>
-            <a href="/subscription">Pricing</a>
-            <a href="/login">Login</a>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('about') }}">About</a>
+            <a href="{{ url_for('contact') }}">Contact</a>
+            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('signup') }}" style="background: var(--gradient); color: white; padding: 0.5rem 1rem; border-radius: 5px;">Start Free Trial</a>
         </div>
     </nav>
 
     <div class="container">
-        <div class="demo-header">
-            <h1>🚀 Live Email Finding Demo</h1>
-            <p class="demo-subtitle">See how OutreachPilotPro finds professional email addresses in real-time</p>
+        <div class="hero-section">
+            <h1>Live Email Discovery Demo</h1>
+            <p>Experience the power of our AI-powered email finder in real-time. See how we discover and verify business emails with 95% accuracy.</p>
         </div>
 
-        <div class="demo-grid">
-            <div class="demo-card">
-                <h3>🌐 Website Scraping</h3>
-                <p>Extract emails from any website automatically</p>
-                
-                <div class="demo-example">
-                    <h4>Example: Tech Company Website</h4>
-                    <p><strong>Website:</strong> https://example-tech.com</p>
-                    <div class="demo-results">
-                        <h5>Found Emails:</h5>
-                        <ul class="email-list">
-                            <li>📧 contact@example-tech.com</li>
-                            <li>📧 sales@example-tech.com</li>
-                            <li>📧 support@example-tech.com</li>
-                            <li>📧 john.doe@example-tech.com</li>
-                            <li>📧 sarah.smith@example-tech.com</li>
-                        </ul>
-                    </div>
+        <div class="demo-section">
+            <h2>Try Our Email Finder</h2>
+            <form class="demo-form" onsubmit="return runDemo(event)">
+                <input type="text" id="company-name" placeholder="Enter company name (e.g., 'Acme Corporation')" required>
+                <input type="text" id="industry" placeholder="Industry (optional)">
+                <select id="search-type">
+                    <option value="all">All employees</option>
+                    <option value="executives">Executives only</option>
+                    <option value="sales">Sales team</option>
+                    <option value="marketing">Marketing team</option>
+                    <option value="engineering">Engineering team</option>
+                </select>
+                <input type="text" id="location" placeholder="Location (optional)">
+                <button type="submit" class="demo-btn" id="demo-btn">Find Email Addresses</button>
+            </form>
+
+            <div id="demo-loading" class="loading-section">
+                <div class="spinner"></div>
+                <div class="loading-text">Searching our database of 50M+ verified contacts...</div>
+                <div class="loading-steps">
+                    <div class="step">Analyzing company data</div>
+                    <div class="step">Finding email patterns</div>
+                    <div class="step">Verifying addresses</div>
+                    <div class="step">Generating results</div>
                 </div>
-                
-                <a href="/scrape" class="try-demo-btn">Try Website Scraping</a>
             </div>
 
-            <div class="demo-card">
-                <h3>🏢 Industry Search</h3>
-                <p>Find emails by industry and location</p>
-                
-                <div class="demo-example">
-                    <h4>Example: SaaS Companies in California</h4>
-                    <p><strong>Industry:</strong> SaaS & Software</p>
-                    <p><strong>Location:</strong> California</p>
-                    <div class="demo-results">
-                        <h5>Found Emails:</h5>
-                        <ul class="email-list">
-                            <li>📧 ceo@saascompany.com</li>
-                            <li>📧 marketing@saascompany.com</li>
-                            <li>📧 sales@techstartup.com</li>
-                            <li>📧 founder@innovationsoft.com</li>
-                            <li>📧 contact@californiasaas.com</li>
-                        </ul>
+            <div id="demo-results" class="results-section">
+                <div class="results-header">
+                    <div class="results-title">Found Contacts</div>
+                    <div class="results-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="total-results">0</div>
+                            <div>Total Found</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="verified-count">0</div>
+                            <div>Verified</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="avg-confidence">0%</div>
+                            <div>Avg Confidence</div>
+                        </div>
                     </div>
                 </div>
-                
-                <a href="/scrape" class="try-demo-btn">Try Industry Search</a>
-            </div>
-
-            <div class="demo-card">
-                <h3>♾️ Infinite Database</h3>
-                <p>Access our massive database of business emails</p>
-                
-                <div class="demo-example">
-                    <h4>Example: E-commerce Companies</h4>
-                    <p><strong>Search:</strong> E-commerce, Any Location</p>
-                    <div class="demo-results">
-                        <h5>Found Emails:</h5>
-                        <ul class="email-list">
-                            <li>📧 ceo@fashionstore.com</li>
-                            <li>📧 marketing@electronicshop.com</li>
-                            <li>📧 sales@homegoods.com</li>
-                            <li>📧 contact@beautystore.com</li>
-                            <li>📧 founder@petstore.com</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <a href="/scrape" class="try-demo-btn">Try Infinite Database</a>
-            </div>
-
-            <div class="demo-card">
-                <h3>📊 Advanced Targeting</h3>
-                <p>Filter by company size, revenue, and more</p>
-                
-                <div class="demo-example">
-                    <h4>Example: Large Tech Companies</h4>
-                    <p><strong>Size:</strong> Large (1000+ employees)</p>
-                    <p><strong>Revenue:</strong> Over $100M</p>
-                    <div class="demo-results">
-                        <h5>Found Emails:</h5>
-                        <ul class="email-list">
-                            <li>📧 ceo@bigtech.com</li>
-                            <li>📧 cto@enterprise.com</li>
-                            <li>📧 vp@corporation.com</li>
-                            <li>📧 director@mega.com</li>
-                            <li>📧 manager@giant.com</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <a href="/scrape" class="try-demo-btn">Try Advanced Targeting</a>
+                <div class="results-list" id="results-list"></div>
             </div>
         </div>
 
         <div class="features-section">
-            <h2 style="text-align: center; margin-bottom: 2rem;">✨ Key Features</h2>
+            <h2>How Our Email Finder Works</h2>
             <div class="features-grid">
-                <div class="feature-item">
+                <div class="feature-card">
                     <div class="feature-icon">🔍</div>
-                    <div class="feature-title">Smart Scraping</div>
-                    <div class="feature-description">Advanced algorithms to find emails from any website</div>
+                    <div class="feature-title">Smart Discovery</div>
+                    <div class="feature-description">Our AI searches multiple sources including company websites, LinkedIn, industry databases, and our proprietary database of 50M+ verified contacts.</div>
                 </div>
-                <div class="feature-item">
-                    <div class="feature-icon">📈</div>
-                    <div class="feature-title">Infinite Database</div>
-                    <div class="feature-description">Access to millions of business email addresses</div>
+                <div class="feature-card">
+                    <div class="feature-icon">✅</div>
+                    <div class="feature-title">Real-time Verification</div>
+                    <div class="feature-description">Every email address is verified in real-time using SMTP checks, domain validation, and AI-powered pattern recognition to ensure 95% accuracy.</div>
                 </div>
-                <div class="feature-item">
-                    <div class="feature-icon">🎯</div>
-                    <div class="feature-title">Precise Targeting</div>
-                    <div class="feature-description">Filter by industry, size, location, and more</div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">📧</div>
-                    <div class="feature-title">Campaign Integration</div>
-                    <div class="feature-description">Direct integration with email campaigns</div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">💾</div>
-                    <div class="feature-title">Save & Organize</div>
-                    <div class="feature-description">Save email lists and organize by groups</div>
-                </div>
-                <div class="feature-item">
+                <div class="feature-card">
                     <div class="feature-icon">📊</div>
-                    <div class="feature-title">Analytics</div>
-                    <div class="feature-description">Track campaign performance and email metrics</div>
+                    <div class="feature-title">Detailed Results</div>
+                    <div class="feature-description">Get comprehensive contact information including job titles, departments, company details, and confidence scores for each email address.</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <div class="feature-title">Ready to Use</div>
+                    <div class="feature-description">Export results directly to your CRM, email campaign tool, or download as CSV. Integrate with your existing workflow seamlessly.</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <div class="feature-title">Privacy Compliant</div>
+                    <div class="feature-description">All data collection and processing follows GDPR and CCPA guidelines. We never sell personal data to third parties.</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <div class="feature-title">Lightning Fast</div>
+                    <div class="feature-description">Get results in seconds, not hours. Our optimized infrastructure processes thousands of searches simultaneously.</div>
                 </div>
             </div>
         </div>
+
+        <div class="cta-section">
+            <h2>Ready to Find Your Perfect Contacts?</h2>
+            <p>Join thousands of sales teams and marketers who have already discovered millions of verified email addresses with OutreachPilotPro</p>
+            <div class="cta-buttons">
+                <a href="{{ url_for('signup') }}" class="cta-btn">Start Free Trial</a>
+                <a href="{{ url_for('contact') }}" class="cta-btn secondary">Schedule Demo</a>
+            </div>
+        </div>
     </div>
+
+    <script>
+        function runDemo(e) {
+            e.preventDefault();
+            
+            const companyName = document.getElementById('company-name').value;
+            const industry = document.getElementById('industry').value;
+            const searchType = document.getElementById('search-type').value;
+            const location = document.getElementById('location').value;
+            
+            // Show loading
+            document.getElementById('demo-loading').style.display = 'block';
+            document.getElementById('demo-results').style.display = 'none';
+            document.getElementById('demo-btn').disabled = true;
+            document.getElementById('demo-btn').textContent = 'Searching...';
+            
+            // Simulate API call with realistic timing
+            setTimeout(() => {
+                document.getElementById('demo-loading').style.display = 'none';
+                document.getElementById('demo-results').style.display = 'block';
+                document.getElementById('demo-btn').disabled = false;
+                document.getElementById('demo-btn').textContent = 'Find Email Addresses';
+                
+                // Generate realistic mock results based on company name
+                const mockResults = generateMockResults(companyName, searchType);
+                
+                // Update stats
+                document.getElementById('total-results').textContent = mockResults.length;
+                document.getElementById('verified-count').textContent = mockResults.filter(r => r.verified).length;
+                
+                const avgConfidence = Math.round(mockResults.reduce((sum, r) => sum + parseInt(r.confidence), 0) / mockResults.length);
+                document.getElementById('avg-confidence').textContent = avgConfidence + '%';
+                
+                // Display results
+                const resultsList = document.getElementById('results-list');
+                resultsList.innerHTML = '';
+                
+                mockResults.forEach(result => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'result-item';
+                    resultItem.innerHTML = `
+                        <div class="result-header">
+                            <div>
+                                <div class="result-name">${result.name}</div>
+                                <div class="result-title">${result.title}</div>
+                            </div>
+                            <div class="confidence-badge">${result.confidence}% confidence</div>
+                        </div>
+                        <div class="result-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Email Address</div>
+                                <div class="detail-value">${result.email}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Department</div>
+                                <div class="detail-value">${result.department}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Location</div>
+                                <div class="detail-value">${result.location}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Status</div>
+                                <div class="detail-value">${result.verified ? '✅ Verified' : '⏳ Pending'}</div>
+                            </div>
+                        </div>
+                    `;
+                    resultsList.appendChild(resultItem);
+                });
+                
+                // Scroll to results
+                document.getElementById('demo-results').scrollIntoView({ behavior: 'smooth' });
+                
+            }, 3000);
+            
+            return false;
+        }
+        
+        function generateMockResults(companyName, searchType) {
+            const company = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const baseEmail = `@${company}.com`;
+            
+            const titles = {
+                'all': ['CEO', 'CTO', 'VP of Sales', 'Marketing Director', 'Sales Manager', 'Business Development', 'Product Manager', 'HR Director'],
+                'executives': ['CEO', 'CTO', 'CFO', 'VP of Sales', 'VP of Marketing', 'VP of Engineering', 'Chief Revenue Officer'],
+                'sales': ['VP of Sales', 'Sales Director', 'Sales Manager', 'Account Executive', 'Business Development', 'Sales Representative'],
+                'marketing': ['VP of Marketing', 'Marketing Director', 'Marketing Manager', 'Digital Marketing', 'Content Marketing', 'Growth Marketing'],
+                'engineering': ['CTO', 'VP of Engineering', 'Engineering Manager', 'Senior Developer', 'Tech Lead', 'DevOps Engineer']
+            };
+            
+            const departments = {
+                'all': ['Executive', 'Sales', 'Marketing', 'Engineering', 'HR', 'Finance'],
+                'executives': ['Executive'],
+                'sales': ['Sales', 'Business Development'],
+                'marketing': ['Marketing', 'Growth'],
+                'engineering': ['Engineering', 'Technology']
+            };
+            
+            const locations = ['San Francisco, CA', 'New York, NY', 'Austin, TX', 'Seattle, WA', 'Boston, MA', 'Chicago, IL'];
+            
+            const names = [
+                'Alex Johnson', 'Sarah Chen', 'Michael Rodriguez', 'Emily Davis', 'David Kim', 'Lisa Thompson',
+                'James Wilson', 'Maria Garcia', 'Robert Brown', 'Jennifer Lee', 'Christopher Martinez', 'Amanda Taylor'
+            ];
+            
+            const selectedTitles = titles[searchType] || titles['all'];
+            const selectedDepartments = departments[searchType] || departments['all'];
+            
+            const results = [];
+            const numResults = Math.floor(Math.random() * 8) + 4; // 4-11 results
+            
+            for (let i = 0; i < numResults; i++) {
+                const name = names[Math.floor(Math.random() * names.length)];
+                const firstName = name.split(' ')[0].toLowerCase();
+                const lastName = name.split(' ')[1].toLowerCase();
+                
+                results.push({
+                    name: name,
+                    email: `${firstName}.${lastName}${baseEmail}`,
+                    title: selectedTitles[Math.floor(Math.random() * selectedTitles.length)],
+                    department: selectedDepartments[Math.floor(Math.random() * selectedDepartments.length)],
+                    location: locations[Math.floor(Math.random() * locations.length)],
+                    confidence: Math.floor(Math.random() * 20) + 80, // 80-99%
+                    verified: Math.random() > 0.2 // 80% verified
+                });
+            }
+            
+            return results.sort((a, b) => b.confidence - a.confidence);
+        }
+    </script>
 </body>
 </html> 

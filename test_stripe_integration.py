@@ -13,7 +13,8 @@ import subscription_manager
 load_dotenv()
 
 # Set up Stripe
-stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+from config import Config
+stripe.api_key = Config.STRIPE_SECRET_KEY
 
 def test_stripe_connection():
     """Test Stripe API connection"""

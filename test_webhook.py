@@ -6,11 +6,7 @@ Test Stripe Webhook Endpoint
 import requests
 import json
 import stripe
-import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+from config import Config
 
 def test_webhook_endpoint():
     """Test the webhook endpoint"""
@@ -121,7 +117,7 @@ def check_webhook_configuration():
     print("✅ Events: 5 events configured")
     
     # Check if webhook secret is set
-    webhook_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
+    webhook_secret = Config.STRIPE_WEBHOOK_SECRET
     if webhook_secret:
         print("✅ Webhook secret: Configured")
     else:

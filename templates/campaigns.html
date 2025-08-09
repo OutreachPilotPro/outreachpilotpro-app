@@ -247,6 +247,39 @@
         .delete-btn:hover {
             background: #c82333;
         }
+        
+        /* Load Group Dropdown */
+        .load-group-container {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .load-group-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            min-width: 200px;
+        }
+        
+        .dropdown-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+        
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
         }
         
         /* Campaign Cards */
@@ -411,7 +444,9 @@
 <body>
     <!-- Navigation -->
     <nav class="navbar">
-        <div class="logo">OutreachPilotPro</div>
+        <div class="logo">
+            <a href="{{ url_for('home') }}" style="text-decoration: none; color: inherit;">OutreachPilotPro</a>
+        </div>
         <div class="nav-links">
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
             <a href="{{ url_for('scrape_page') }}">Find Emails</a>
@@ -443,7 +478,14 @@
                     <label class="email-input-label">Add Emails to Campaign</label>
                     <textarea class="email-input" id="email-input" rows="4" placeholder="Enter email addresses (one per line) or paste a comma-separated list"></textarea>
                 </div>
-                <button class="load-group-btn" onclick="loadSavedGroup()">📂 Load Saved Group</button>
+                <div class="load-group-container">
+                    <button class="load-group-btn" onclick="showLoadGroupOptions()">📂 Load Saved Group</button>
+                    <input type="file" id="file-input" accept=".txt,.csv" style="display: none;" onchange="loadFromFile(event)">
+                    <div class="load-group-dropdown" id="load-group-dropdown" style="display: none;">
+                        <div class="dropdown-item" onclick="loadFromSavedGroups()">📋 Load from Saved Groups</div>
+                        <div class="dropdown-item" onclick="loadFromFileInput()">📁 Load from File</div>
+                    </div>
+                </div>
             </div>
             
             <div class="saved-groups" id="saved-groups">
@@ -593,6 +635,34 @@
             
             if (groupName && savedLists[groupName]) {
                 loadGroupEmails(groupName);
+            }
+        }
+
+        function showLoadGroupOptions() {
+            const dropdown = document.getElementById('load-group-dropdown');
+            dropdown.style.display = 'block';
+        }
+
+        function loadFromSavedGroups() {
+            loadSavedGroups();
+            document.getElementById('load-group-dropdown').style.display = 'none';
+        }
+
+        function loadFromFileInput() {
+            document.getElementById('file-input').click();
+            document.getElementById('load-group-dropdown').style.display = 'none';
+        }
+
+        function loadFromFile(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const emailInput = document.getElementById('email-input');
+                    emailInput.value = e.target.result.replace(/,/g, '\n'); // Handle comma-separated lists
+                    showNotification(`Loaded ${e.target.result.split('\n').filter(line => line.trim()).length} emails from file`, 'success');
+                };
+                reader.readAsText(file);
             }
         }
         
