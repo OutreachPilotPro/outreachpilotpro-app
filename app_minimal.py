@@ -5,7 +5,7 @@ This is a streamlined version for production deployment on Render
 """
 
 import os
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, redirect, url_for
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -53,31 +53,66 @@ def contact():
 def features():
     return render_template('features.html')
 
-# Additional routes needed by templates
 @app.route('/scrape')
-def scrape_page():
-    """Email scraping page"""
+def scrape():
     return render_template('scrape.html')
 
 @app.route('/campaigns')
-def campaigns_page():
-    """Campaigns page"""
+def campaigns():
     return render_template('campaigns.html')
 
 @app.route('/subscription')
-def subscription_page():
-    """Subscription page"""
+def subscription():
     return render_template('subscription.html')
 
 @app.route('/terms')
 def terms():
-    """Terms of service page"""
     return render_template('terms.html')
 
 @app.route('/privacy')
 def privacy():
-    """Privacy policy page"""
     return render_template('privacy.html')
+
+# Additional routes that templates expect
+@app.route('/google_login')
+def google_login():
+    """Placeholder for Google OAuth login"""
+    return redirect(url_for('login'))
+
+@app.route('/live-demo')
+def live_demo():
+    """Placeholder for live demo page"""
+    return render_template('live_demo.html')
+
+@app.route('/gdpr')
+def gdpr():
+    """Placeholder for GDPR page"""
+    return render_template('gdpr.html')
+
+@app.route('/integrations')
+def integrations():
+    """Placeholder for integrations page"""
+    return render_template('integrations.html')
+
+@app.route('/blog')
+def blog():
+    """Placeholder for blog page"""
+    return render_template('blog.html')
+
+@app.route('/careers')
+def careers():
+    """Placeholder for careers page"""
+    return render_template('careers.html')
+
+@app.route('/anti-spam')
+def anti_spam():
+    """Placeholder for anti-spam page"""
+    return render_template('anti_spam.html')
+
+@app.route('/api')
+def api():
+    """Placeholder for API page"""
+    return render_template('api_docs.html')
 
 @app.route('/api/health')
 def health_check():
