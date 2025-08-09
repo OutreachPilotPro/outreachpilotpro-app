@@ -20,9 +20,18 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-pro
 def index():
     return render_template('index.html')
 
+@app.route('/home')
+def home():
+    """Alias for index route to fix template errors"""
+    return render_template('index.html')
+
 @app.route('/login')
 def login():
     return render_template('login.html')
+
+@app.route('/signup')
+def signup():
+    return render_template('signup.html')
 
 @app.route('/dashboard')
 def dashboard():
@@ -43,6 +52,32 @@ def contact():
 @app.route('/features')
 def features():
     return render_template('features.html')
+
+# Additional routes needed by templates
+@app.route('/scrape')
+def scrape_page():
+    """Email scraping page"""
+    return render_template('scrape.html')
+
+@app.route('/campaigns')
+def campaigns_page():
+    """Campaigns page"""
+    return render_template('campaigns.html')
+
+@app.route('/subscription')
+def subscription_page():
+    """Subscription page"""
+    return render_template('subscription.html')
+
+@app.route('/terms')
+def terms():
+    """Terms of service page"""
+    return render_template('terms.html')
+
+@app.route('/privacy')
+def privacy():
+    """Privacy policy page"""
+    return render_template('privacy.html')
 
 @app.route('/api/health')
 def health_check():
