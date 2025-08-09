@@ -375,6 +375,10 @@ def dashboard():
     
     user_id = session['user']['id']
     
+    # Get user subscription and usage stats
+    subscription = subscription_mgr.get_user_subscription(user_id)
+    usage_stats = subscription_mgr.get_usage_stats(user_id)  # THIS LINE IS CRUCIAL
+    
     # Get user stats
     conn = get_db_connection()
     c = conn.cursor()
@@ -391,18 +395,25 @@ def dashboard():
     c.execute("SELECT SUM(emails_found) FROM email_usage WHERE user_id = ?", (user_id,))
     total_emails = c.fetchone()[0] or 0
     
-    # Get subscription status
-    c.execute("SELECT s.plan_id, s.status FROM subscriptions s WHERE s.user_id = ? AND s.status = 'active' ORDER BY s.created_at DESC LIMIT 1", (user_id,))
-    subscription = c.fetchone()
+    # Get recent campaigns for display
+    c.execute("SELECT id, name, status, created_at FROM campaigns WHERE user_id = ? ORDER BY created_at DESC LIMIT 5", (user_id,))
+    recent_campaigns = c.fetchall()
+    
+    # Get recent email activity
+    c.execute("SELECT date, emails_found FROM email_usage WHERE user_id = ? ORDER BY date DESC LIMIT 7", (user_id,))
+    recent_emails = c.fetchall()
     
     conn.close()
     
     return render_template("dashboard.html", 
                          user=session['user'],
+                         subscription=subscription,
+                         usage_stats=usage_stats,  # MAKE SURE THIS IS PASSED
                          campaigns_count=campaigns_count,
                          emails_today=emails_today,
                          total_emails=total_emails,
-                         subscription=subscription)
+                         recent_campaigns=recent_campaigns,
+                         recent_emails=recent_emails)
 
 @app.route("/scrape")
 def scrape_page():
