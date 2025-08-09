@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anti-Spam Policy - OutreachPilotPro</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #388E3C;
+            --secondary: #2196F3;
+            --dark: #212121;
+            --light: #f5f5f5;
+            --gradient: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .hero-section {
+            text-align: center;
+            padding: 4rem 0;
+            background: white;
+            border-radius: 15px;
+            margin-bottom: 3rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .hero-section h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero-section p {
+            font-size: 1.2rem;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .content-section {
+            background: white;
+            border-radius: 15px;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .content-section h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+        
+        .content-section h3 {
+            font-size: 1.5rem;
+            margin: 2rem 0 1rem 0;
+            color: var(--primary);
+        }
+        
+        .content-section p {
+            margin-bottom: 1rem;
+            color: #666;
+        }
+        
+        .content-section ul {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+        
+        .content-section li {
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 8px;
+        }
+        
+        .warning-box h4 {
+            color: #856404;
+            margin-bottom: 1rem;
+        }
+        
+        .compliance-box {
+            background: #d4edda;
+            border-left: 4px solid var(--primary);
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 8px;
+        }
+        
+        .compliance-box h4 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+        
+        .contact-info {
+            background: var(--gradient);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+        }
+        
+        .contact-info h3 {
+            margin-bottom: 1rem;
+        }
+        
+        .contact-info a {
+            color: white;
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .hero-section h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <a href="{{ url_for('home') }}" style="text-decoration: none; color: inherit;">OutreachPilotPro</a>
+        </div>
+        <div class="nav-links">
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('about') }}">About</a>
+            <a href="{{ url_for('contact') }}">Contact</a>
+            <a href="{{ url_for('login') }}">Login</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="hero-section">
+            <h1>Anti-Spam Policy</h1>
+            <p>We are committed to preventing spam and ensuring responsible email practices. Learn about our anti-spam measures and compliance.</p>
+        </div>
+
+        <div class="content-section">
+            <h2>Our Commitment to Anti-Spam</h2>
+            <p>OutreachPilotPro is committed to preventing spam and promoting responsible email marketing practices. We comply with all applicable anti-spam laws and regulations, including the CAN-SPAM Act, GDPR, and other international anti-spam legislation.</p>
+            
+            <h3>What is Spam?</h3>
+            <p>Spam is unsolicited commercial email sent in bulk. It typically includes:</p>
+            <ul>
+                <li>Emails sent without recipient consent</li>
+                <li>Misleading subject lines or sender information</li>
+                <li>Lack of proper unsubscribe mechanisms</li>
+                <li>False or misleading content</li>
+                <li>Emails sent to purchased or harvested email lists</li>
+            </ul>
+
+            <div class="warning-box">
+                <h4>⚠️ Zero Tolerance for Spam</h4>
+                <p>We have a zero-tolerance policy for spam. Any user found to be sending spam through our platform will have their account immediately suspended and may face legal consequences.</p>
+            </div>
+
+            <h3>Our Anti-Spam Measures</h3>
+            <p>We implement comprehensive measures to prevent spam and ensure compliance:</p>
+            <ul>
+                <li><strong>Email Verification:</strong> All email addresses are verified before sending</li>
+                <li><strong>Consent Management:</strong> Require explicit consent for all email communications</li>
+                <li><strong>Unsubscribe Compliance:</strong> All emails include clear unsubscribe options</li>
+                <li><strong>Sender Authentication:</strong> Implement SPF, DKIM, and DMARC protocols</li>
+                <li><strong>Content Filtering:</strong> Monitor email content for spam indicators</li>
+                <li><strong>Rate Limiting:</strong> Prevent bulk sending abuse</li>
+                <li><strong>Reputation Monitoring:</strong> Track sender reputation and deliverability</li>
+            </ul>
+
+            <h3>CAN-SPAM Act Compliance</h3>
+            <p>We ensure full compliance with the CAN-SPAM Act requirements:</p>
+            <ul>
+                <li><strong>Accurate Header Information:</strong> All emails contain accurate sender information</li>
+                <li><strong>Non-Deceptive Subject Lines:</strong> Subject lines accurately reflect email content</li>
+                <li><strong>Clear Identification:</strong> Emails are clearly identified as advertisements</li>
+                <li><strong>Physical Address:</strong> Include valid physical postal address</li>
+                <li><strong>Unsubscribe Mechanism:</strong> Provide clear and functional unsubscribe options</li>
+                <li><strong>Prompt Unsubscribe Processing:</strong> Honor unsubscribe requests within 10 business days</li>
+            </ul>
+
+            <div class="compliance-box">
+                <h4>✅ Best Practices We Enforce</h4>
+                <ul>
+                    <li>Always obtain explicit consent before sending emails</li>
+                    <li>Use clear, honest subject lines</li>
+                    <li>Include physical address in all commercial emails</li>
+                    <li>Provide one-click unsubscribe functionality</li>
+                    <li>Respect unsubscribe requests immediately</li>
+                    <li>Maintain clean, permission-based email lists</li>
+                    <li>Monitor and maintain good sender reputation</li>
+                </ul>
+            </div>
+
+            <h3>User Responsibilities</h3>
+            <p>As a user of OutreachPilotPro, you agree to:</p>
+            <ul>
+                <li>Only send emails to recipients who have given explicit consent</li>
+                <li>Maintain accurate and up-to-date email lists</li>
+                <li>Include proper unsubscribe mechanisms in all emails</li>
+                <li>Honor unsubscribe requests promptly</li>
+                <li>Use accurate sender information</li>
+                <li>Comply with all applicable anti-spam laws</li>
+                <li>Not use our service for sending spam or unsolicited emails</li>
+            </ul>
+
+            <h3>Prohibited Activities</h3>
+            <p>The following activities are strictly prohibited:</p>
+            <ul>
+                <li>Sending emails without recipient consent</li>
+                <li>Using purchased or harvested email lists</li>
+                <li>Falsifying sender information or headers</li>
+                <li>Using misleading subject lines</li>
+                <li>Failing to include unsubscribe options</li>
+                <li>Ignoring unsubscribe requests</li>
+                <li>Sending emails to invalid or non-existent addresses</li>
+                <li>Using our service for phishing or fraudulent activities</li>
+            </ul>
+
+            <h3>Monitoring and Enforcement</h3>
+            <p>We actively monitor email sending patterns and take action against violations:</p>
+            <ul>
+                <li><strong>Automated Monitoring:</strong> Real-time monitoring of sending patterns</li>
+                <li><strong>Complaint Tracking:</strong> Monitor spam complaints and bounce rates</li>
+                <li><strong>Account Suspension:</strong> Immediate suspension for spam violations</li>
+                <li><strong>Legal Action:</strong> Cooperation with law enforcement when necessary</li>
+                <li><strong>Reporting:</strong> Report violations to relevant authorities</li>
+            </ul>
+
+            <h3>Reporting Spam</h3>
+            <p>If you receive spam or suspect spam activity, please report it immediately:</p>
+            <ul>
+                <li>Forward the spam email to <strong>spam@outreachpilotpro.com</strong></li>
+                <li>Include the full email headers if possible</li>
+                <li>Provide any additional context or information</li>
+                <li>We investigate all reports promptly and take appropriate action</li>
+            </ul>
+        </div>
+
+        <div class="contact-info">
+            <h3>Questions About Our Anti-Spam Policy?</h3>
+            <p>If you have questions about our anti-spam policy or need assistance with compliance, please contact us:</p>
+            <p><strong>Email:</strong> <a href="mailto:compliance@outreachpilotpro.com">compliance@outreachpilotpro.com</a></p>
+            <p><strong>Spam Reports:</strong> <a href="mailto:spam@outreachpilotpro.com">spam@outreachpilotpro.com</a></p>
+            <p>We're committed to maintaining a spam-free environment for all users.</p>
+        </div>
+    </div>
+</body>
+</html>

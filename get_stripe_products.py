@@ -5,14 +5,10 @@ Helps identify Product IDs for better Stripe integration
 """
 
 import stripe
-import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+from config import Config
 
 # Set up Stripe
-stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+stripe.api_key = Config.STRIPE_SECRET_KEY
 
 def get_stripe_products():
     """Get all Stripe products and their prices"""

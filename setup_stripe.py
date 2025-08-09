@@ -5,20 +5,16 @@ This script helps you create the necessary Stripe products and prices for your s
 """
 
 import stripe
-import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+from config import Config
 
 def setup_stripe_products():
     """Create Stripe products and prices for subscription plans"""
     
     # Set your Stripe secret key
-    stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+    stripe.api_key = Config.STRIPE_SECRET_KEY
     
     if not stripe.api_key:
-        print("❌ Error: STRIPE_SECRET_KEY not found in environment variables")
+        print("❌ Error: STRIPE_SECRET_KEY not found in configuration")
         print("Please add your Stripe secret key to your .env file")
         return
     

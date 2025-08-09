@@ -27,7 +27,7 @@ def create_database():
     
     # Import modules to get table schemas
     from subscription_manager import create_subscription_tables
-    from email_scraper import EmailScraper
+    from services.email_finder import EmailFinder
     
     conn = sqlite3.connect("outreachpilot.db")
     c = conn.cursor()

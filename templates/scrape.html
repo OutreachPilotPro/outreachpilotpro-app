@@ -343,7 +343,9 @@
 <body>
     <!-- Navigation -->
     <nav class="navbar">
-        <div class="logo">OutreachPilotPro</div>
+        <div class="logo">
+            <a href="{{ url_for('home') }}" style="text-decoration: none; color: inherit;">OutreachPilotPro</a>
+        </div>
         <div class="nav-links">
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
             <a href="{{ url_for('scrape_page') }}">Find Emails</a>
@@ -549,10 +551,9 @@
 
         async function scrapeWebsite(url) {
             showLoading();
-            console.log('Scraping website:', url);
             
             try {
-                const response = await fetch('/api/scrape/website', {
+                const response = await fetch('/api/scrape-website', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -560,10 +561,13 @@
                     body: JSON.stringify({ url: url })
                 });
                 
-                console.log('Response status:', response.status);
                 const result = await response.json();
-                console.log('Result:', result);
-                showResults(result);
+                
+                if (result.success) {
+                    showResults(result);
+                } else {
+                    showError(result.error || 'Failed to scrape website');
+                }
             } catch (error) {
                 console.error('Error:', error);
                 showError('Failed to scrape website. Please try again.');
@@ -574,19 +578,25 @@
             showLoading();
             
             try {
-                const response = await fetch('/api/scrape/company', {
+                const response = await fetch('/api/email-search', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ 
-                        company_name: companyName,
-                        industry: industry 
+                        query: companyName,
+                        search_type: 'niche',
+                        filters: { industry: industry }
                     })
                 });
                 
                 const result = await response.json();
-                showResults(result);
+                
+                if (result.success) {
+                    showResults(result);
+                } else {
+                    showError(result.error || 'Failed to search company');
+                }
             } catch (error) {
                 console.error('Error:', error);
                 showError('Failed to search company. Please try again.');
@@ -597,20 +607,29 @@
             showLoading();
             
             try {
-                const response = await fetch('/api/scrape/industry', {
+                const response = await fetch('/api/email-search', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ 
-                        industry: industry,
-                        location: location,
-                        company_size: companySize
+                        query: industry,
+                        search_type: 'niche',
+                        filters: { 
+                            industry: industry,
+                            location: location,
+                            company_size: companySize
+                        }
                     })
                 });
                 
                 const result = await response.json();
-                showIndustryResults(result);
+                
+                if (result.success) {
+                    showIndustryResults(result);
+                } else {
+                    showError(result.error || 'Failed to search industry');
+                }
             } catch (error) {
                 console.error('Error:', error);
                 showError('Failed to search industry. Please try again.');
@@ -622,16 +641,20 @@
             console.log('Searching infinite database with:', { industry, location, companySize, limit });
             
             try {
-                const response = await fetch('/api/search/infinite', {
+                const response = await fetch('/api/email-search', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ 
-                        industry: industry,
-                        location: location,
-                        company_size: companySize,
-                        limit: limit
+                        query: industry,
+                        search_type: 'niche',
+                        filters: { 
+                            industry: industry,
+                            location: location,
+                            company_size: companySize,
+                            limit: limit
+                        }
                     })
                 });
                 
@@ -671,22 +694,34 @@
             const resultsCount = document.getElementById('results-count');
             const createCampaignBtn = document.getElementById('create-campaign-btn');
             
+            console.log('Showing results:', result);
+            
             if (result.success && result.emails && result.emails.length > 0) {
                 resultsCount.textContent = `${result.emails.length} emails`;
                 createCampaignBtn.style.display = 'inline-block';
                 
-                emailList.innerHTML = result.emails.map(email => `
-                    <div class="email-item">
-                        <div class="email-info">
-                            <div class="email-address">${email}</div>
-                            <div class="email-domain">${email.split('@')[1]}</div>
+                emailList.innerHTML = result.emails.map(emailData => {
+                    // Handle both string emails and email objects
+                    const email = typeof emailData === 'string' ? emailData : emailData.email;
+                    const source = emailData.source || 'unknown';
+                    const verified = emailData.verified !== undefined ? emailData.verified : true;
+                    
+                    return `
+                        <div class="email-item">
+                            <div class="email-info">
+                                <div class="email-address">${email}</div>
+                                <div class="email-domain">${email.split('@')[1]}</div>
+                                <div class="email-source" style="font-size: 0.8rem; color: #666; margin-top: 0.25rem;">
+                                    Source: ${source} ${verified ? '✅' : '❌'}
+                                </div>
+                            </div>
+                            <div class="email-actions">
+                                <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
+                                <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
+                            </div>
                         </div>
-                        <div class="email-actions">
-                            <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
-                            <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             } else {
                 resultsCount.textContent = '0 emails';
                 createCampaignBtn.style.display = 'none';
@@ -723,18 +758,28 @@
                 }
                 
                 // Show all emails
-                html += result.emails.map(email => `
-                    <div class="email-item">
-                        <div class="email-info">
-                            <div class="email-address">${email}</div>
-                            <div class="email-domain">${email.split('@')[1]}</div>
+                html += result.emails.map(emailData => {
+                    // Handle both string emails and email objects
+                    const email = typeof emailData === 'string' ? emailData : emailData.email;
+                    const source = emailData.source || 'unknown';
+                    const verified = emailData.verified !== undefined ? emailData.verified : true;
+                    
+                    return `
+                        <div class="email-item">
+                            <div class="email-info">
+                                <div class="email-address">${email}</div>
+                                <div class="email-domain">${email.split('@')[1]}</div>
+                                <div class="email-source" style="font-size: 0.8rem; color: #666; margin-top: 0.25rem;">
+                                    Source: ${source} ${verified ? '✅' : '❌'}
+                                </div>
+                            </div>
+                            <div class="email-actions">
+                                <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
+                                <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
+                            </div>
                         </div>
-                        <div class="email-actions">
-                            <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
-                            <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
                 
                 emailList.innerHTML = html;
             } else {
@@ -793,18 +838,28 @@
                 }
                 
                 // Show all emails
-                html += result.emails.map(email => `
-                    <div class="email-item">
-                        <div class="email-info">
-                            <div class="email-address">${email}</div>
-                            <div class="email-domain">${email.split('@')[1]}</div>
+                html += result.emails.map(emailData => {
+                    // Handle both string emails and email objects
+                    const email = typeof emailData === 'string' ? emailData : emailData.email;
+                    const source = emailData.source || 'unknown';
+                    const verified = emailData.verified !== undefined ? emailData.verified : true;
+                    
+                    return `
+                        <div class="email-item">
+                            <div class="email-info">
+                                <div class="email-address">${email}</div>
+                                <div class="email-domain">${email.split('@')[1]}</div>
+                                <div class="email-source" style="font-size: 0.8rem; color: #666; margin-top: 0.25rem;">
+                                    Source: ${source} ${verified ? '✅' : '❌'}
+                                </div>
+                            </div>
+                            <div class="email-actions">
+                                <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
+                                <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
+                            </div>
                         </div>
-                        <div class="email-actions">
-                            <button class="action-btn copy-btn" onclick="copyEmail('${email}')">Copy</button>
-                            <button class="action-btn save-btn" onclick="saveEmail('${email}')">Save</button>
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
                 
                 emailList.innerHTML = html;
             } else {

@@ -16,7 +16,8 @@ def setup_everything():
     print("="*50)
     
     # Check if we have a Stripe key
-    stripe_key = os.environ.get('STRIPE_SECRET_KEY')
+    from config import Config
+    stripe_key = Config.STRIPE_SECRET_KEY
     
     if not stripe_key or stripe_key == 'your-stripe-secret-key':
         print("\n⚠️  No Stripe key found!")
@@ -185,7 +186,7 @@ def setup_everything():
 
 def quick_test():
     """Quick test to verify everything is working"""
-    stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+    stripe.api_key = Config.STRIPE_SECRET_KEY
     
     try:
         # Test 1: API connection

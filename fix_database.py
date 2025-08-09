@@ -8,94 +8,60 @@ import os
 import time
 
 def fix_database():
-    """Fix database locking and connection issues"""
+    db_path = 'instance/users.db'
     
-    db_path = "outreachpilot.db"
+    # Backup the existing database
+    if os.path.exists(db_path):
+        backup_path = 'instance/users_backup.db'
+        os.system(f'cp {db_path} {backup_path}')
+        print(f"Backed up existing database to {backup_path}")
     
-    print("🔧 Fixing database issues...")
+    # Remove the existing database
+    if os.path.exists(db_path):
+        os.remove(db_path)
+        print("Removed existing database")
     
-    # Close any existing connections
-    try:
-        # Force close any existing connections
-        conn = sqlite3.connect(db_path, timeout=30.0)
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA synchronous=NORMAL")
-        conn.execute("PRAGMA cache_size=10000")
-        conn.execute("PRAGMA temp_store=MEMORY")
-        conn.close()
-        print("✅ Database optimized")
-    except Exception as e:
-        print(f"⚠️  Could not optimize database: {e}")
+    # Create new database with correct schema
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
     
-    # Check and fix tables
-    try:
-        conn = sqlite3.connect(db_path, timeout=30.0)
-        c = conn.cursor()
-        
-        # Check if tables exist
-        c.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = [row[0] for row in c.fetchall()]
-        
-        print(f"📋 Found tables: {', '.join(tables)}")
-        
-        # Ensure usage_tracking table exists
-        if 'usage_tracking' not in tables:
-            print("📝 Creating usage_tracking table...")
-            c.execute("""
-                CREATE TABLE usage_tracking (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    month TEXT NOT NULL,
-                    emails_sent INTEGER DEFAULT 0,
-                    emails_scraped INTEGER DEFAULT 0,
-                    campaigns_created INTEGER DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(user_id, month)
-                )
-            """)
-            print("✅ Created usage_tracking table")
-        
-        # Ensure subscriptions table exists
-        if 'subscriptions' not in tables:
-            print("📝 Creating subscriptions table...")
-            c.execute("""
-                CREATE TABLE subscriptions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    tier TEXT NOT NULL DEFAULT 'free',
-                    stripe_customer_id TEXT,
-                    stripe_subscription_id TEXT,
-                    status TEXT DEFAULT 'active',
-                    current_period_start TIMESTAMP,
-                    current_period_end TIMESTAMP,
-                    cancel_at_period_end BOOLEAN DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            print("✅ Created subscriptions table")
-        
-        # Create indexes for better performance
-        print("📝 Creating indexes...")
-        try:
-            c.execute("CREATE INDEX IF NOT EXISTS idx_usage_user_month ON usage_tracking(user_id, month)")
-            c.execute("CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id)")
-            c.execute("CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status)")
-            print("✅ Created indexes")
-        except Exception as e:
-            print(f"⚠️  Could not create indexes: {e}")
-        
-        conn.commit()
-        conn.close()
-        
-        print("✅ Database structure verified")
-        
-    except Exception as e:
-        print(f"❌ Database error: {e}")
-        return False
+    # Create users table with correct schema
+    c.execute('''
+        CREATE TABLE users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            name TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     
-    return True
+    # Create subscriptions table
+    c.execute('''
+        CREATE TABLE subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            plan_id TEXT NOT NULL,
+            status TEXT DEFAULT 'active',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
+    # Create campaigns table
+    c.execute('''
+        CREATE TABLE campaigns (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            status TEXT DEFAULT 'draft',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+    print("Created new database with correct schema")
 
 def test_database():
     """Test database connections"""

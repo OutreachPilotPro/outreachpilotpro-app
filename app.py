@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+"""
+OutreachPilotPro - Consolidated Flask App
+Single source of truth combining the best features from all app variants
+"""
+
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from config import Config
 import sqlite3
@@ -5,13 +11,20 @@ import os
 from datetime import datetime
 import json
 import stripe
+import requests
+import re
+import csv
+import asyncio
+import aiohttp
+from urllib.parse import urljoin, urlparse
+from bs4 import BeautifulSoup
+import time
+import random
 
 # Import helper modules
 import bulk_email_sender
-import email_scraper
+from services.email_finder import EmailFinder
 import subscription_manager
-import saas_pricing_model
-from universal_email_finder import UniversalEmailFinder
 import email_database
 
 # Import OAuth dependencies
@@ -21,6 +34,12 @@ from google.auth.transport import requests as google_requests
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Production security settings
+if app.config['FLASK_ENV'] == 'production':
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # Ensure session configuration is set
 if not app.config.get('SECRET_KEY') or app.config['SECRET_KEY'] == 'dev-secret-key':
@@ -59,19 +78,96 @@ except Exception as e:
     email_sender = None
     infinite_email_db = None
 
-# Fix database connection issues
-import sqlite3
+# Enhanced database connection with better error handling
 def get_db_connection():
     conn = sqlite3.connect("outreachpilot.db", timeout=30.0)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA foreign_keys=ON")
     return conn
 
-# Add scraper routes
+# Enhanced database initialization
+def init_enhanced_database():
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    # Create enhanced users table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            password_hash TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_login TIMESTAMP,
+            subscription_status TEXT DEFAULT 'free'
+        )
+    ''')
+    
+    # Create enhanced subscriptions table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            plan_id TEXT NOT NULL,
+            status TEXT DEFAULT 'active',
+            stripe_subscription_id TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
+    # Create enhanced campaigns table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS campaigns (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            emails TEXT,
+            status TEXT DEFAULT 'draft',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            sent_at TIMESTAMP,
+            open_rate REAL DEFAULT 0.0,
+            click_rate REAL DEFAULT 0.0,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
+    # Create email_usage table for tracking
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS email_usage (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            emails_found INTEGER DEFAULT 0,
+            emails_sent INTEGER DEFAULT 0,
+            date DATE DEFAULT CURRENT_DATE,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
+    # Create email_verification table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS email_verification (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            is_valid BOOLEAN DEFAULT 0,
+            verified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            verification_source TEXT
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+
+# Initialize enhanced database
 try:
-    email_scraper.add_scraper_routes(app)
+    init_enhanced_database()
 except Exception as e:
-    print(f"Warning: Could not add scraper routes: {e}")
+    print(f"Warning: Could not initialize enhanced database: {e}")
+
+# Initialize consolidated email finder service
+email_finder = EmailFinder()
 
 @app.route("/")
 def home():
@@ -82,6 +178,56 @@ def live_demo():
     """Live demo page for email finding"""
     return render_template("live_demo.html")
 
+@app.route("/about")
+def about():
+    """About page"""
+    return render_template("about.html")
+
+@app.route("/blog")
+def blog():
+    """Blog page"""
+    return render_template("blog.html")
+
+@app.route("/careers")
+def careers():
+    """Careers page"""
+    return render_template("careers.html")
+
+@app.route("/contact")
+def contact():
+    """Contact page"""
+    return render_template("contact.html")
+
+@app.route("/api")
+def api_docs():
+    """API documentation page"""
+    return render_template("api.html")
+
+@app.route("/integrations")
+def integrations():
+    """Integrations page"""
+    return render_template("integrations.html")
+
+@app.route("/features")
+def features():
+    """Features page"""
+    return render_template("features.html")
+
+@app.route("/pricing")
+def pricing():
+    """Pricing page"""
+    return render_template("pricing.html")
+
+@app.route("/gdpr")
+def gdpr():
+    """GDPR compliance page"""
+    return render_template("gdpr.html")
+
+@app.route("/anti-spam")
+def anti_spam():
+    """Anti-spam policy page"""
+    return render_template("anti_spam.html")
+
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     if 'user' in session:
@@ -91,39 +237,58 @@ def login():
         email = request.form.get('email')
         password = request.form.get('password')
         
-        # Simple login system - create account if doesn't exist
-        conn = sqlite3.connect("outreachpilot.db")
+        # Enhanced login system with password support
+        conn = get_db_connection()
         c = conn.cursor()
         
         # Check if user exists
-        c.execute("SELECT id, email, name FROM users WHERE email = ?", (email,))
+        c.execute("SELECT id, email, name, password_hash FROM users WHERE email = ?", (email,))
         user = c.fetchone()
         
         if user:
-            # User exists, log them in
-            session['user'] = {
-                'id': user[0],
-                'email': user[1],
-                'name': user[2] or email.split('@')[0]
-            }
-            flash('Successfully logged in!', 'success')
-            return redirect(url_for('dashboard'))
+            user_id, user_email, user_name, password_hash = user
+            
+            # If password_hash exists, verify password
+            if password_hash:
+                from werkzeug.security import check_password_hash
+                if check_password_hash(password_hash, password):
+                    session['user'] = {
+                        'id': user_id,
+                        'email': user_email,
+                        'name': user_name
+                    }
+                    conn.close()
+                    return redirect(url_for('dashboard'))
+                else:
+                    flash('Invalid password', 'error')
+                    conn.close()
+                    return render_template("login.html")
+            else:
+                # Legacy user without password, log them in
+                session['user'] = {
+                    'id': user_id,
+                    'email': user_email,
+                    'name': user_name
+                }
+                conn.close()
+                return redirect(url_for('dashboard'))
         else:
-            # Create new user
-            c.execute("INSERT INTO users (email, name, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)", 
-                     (email, email.split('@')[0]))
+            # Create new user with password
+            from werkzeug.security import generate_password_hash
+            password_hash = generate_password_hash(password) if password else None
+            
+            c.execute("INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)", 
+                     (email, email.split('@')[0], password_hash))
             user_id = c.lastrowid
             conn.commit()
+            conn.close()
             
             session['user'] = {
                 'id': user_id,
                 'email': email,
                 'name': email.split('@')[0]
             }
-            flash('Account created and logged in successfully!', 'success')
             return redirect(url_for('dashboard'))
-        
-        conn.close()
     
     return render_template("login.html")
 
@@ -133,695 +298,924 @@ def signup():
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
-        # Handle signup form submission
         email = request.form.get('email')
         password = request.form.get('password')
+        name = request.form.get('name', email.split('@')[0])
         
-        # For now, just redirect to Google OAuth
-        flash('Please use Google OAuth to sign up.', 'info')
-        return redirect(url_for('google_login'))
+        if not password:
+            flash('Password is required', 'error')
+            return render_template("signup.html")
+        
+        conn = get_db_connection()
+        c = conn.cursor()
+        
+        # Check if user already exists
+        c.execute("SELECT id FROM users WHERE email = ?", (email,))
+        if c.fetchone():
+            flash('User already exists', 'error')
+            conn.close()
+            return render_template("signup.html")
+        
+        # Create new user
+        from werkzeug.security import generate_password_hash
+        password_hash = generate_password_hash(password)
+        
+        c.execute("INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)", 
+                 (email, name, password_hash))
+        user_id = c.lastrowid
+        conn.commit()
+        conn.close()
+        
+        session['user'] = {
+            'id': user_id,
+            'email': email,
+            'name': name
+        }
+        return redirect(url_for('dashboard'))
     
     return render_template("signup.html")
 
 @app.route("/login/google")
 def google_login():
-    redirect_uri = app.config['OAUTH_CALLBACK_URL']
-    print(f"Redirecting to Google OAuth with URI: {redirect_uri}")
-    # Clear any existing session data
-    session.clear()
-    return oauth.google.authorize_redirect(redirect_uri, prompt='consent')
+    """Google OAuth login"""
+    redirect_uri = url_for('google_authorize', _external=True)
+    return oauth.google.authorize_redirect(redirect_uri)
 
 @app.route("/login/google/authorize")
 def google_authorize():
+    """Google OAuth callback"""
     try:
-        print(f"OAuth callback received. Request args: {request.args}")
+        token = oauth.google.authorize_access_token()
+        user_info = oauth.google.parse_id_token(token)
         
-        # Get the authorization code from the request
-        code = request.args.get('code')
-        if not code:
-            raise Exception("No authorization code received")
-        
-        # Exchange code for token manually
-        import requests
-        
-        token_url = 'https://oauth2.googleapis.com/token'
-        token_data = {
-            'client_id': app.config['GOOGLE_CLIENT_ID'],
-            'client_secret': app.config['GOOGLE_CLIENT_SECRET'],
-            'code': code,
-            'grant_type': 'authorization_code',
-            'redirect_uri': app.config['OAUTH_CALLBACK_URL']
-        }
-        
-        token_response = requests.post(token_url, data=token_data)
-        token_response.raise_for_status()
-        token = token_response.json()
-        
-        print(f"Token received successfully")
-        
-        # Get user info using the access token
-        userinfo_url = 'https://www.googleapis.com/oauth2/v2/userinfo'
-        headers = {'Authorization': f"Bearer {token['access_token']}"}
-        userinfo_response = requests.get(userinfo_url, headers=headers)
-        userinfo_response.raise_for_status()
-        user_info = userinfo_response.json()
-        
-        print(f"User info: {user_info}")
-        
-        # Get or create user
         user = get_or_create_user(user_info)
+        session['user'] = user
         
-        # Store user in session
-        session['user'] = {
-            'id': user['id'],
-            'email': user['email'],
-            'name': user['name'],
-            'google_id': user['google_id']
-        }
+        # Store Google token for Gmail access
+        if 'access_token' in token:
+            store_google_token(user['id'], token['access_token'])
         
-        # Store Google token for email sending
-        store_google_token(user['id'], token)
-        
-        flash('Successfully logged in with Google!', 'success')
         return redirect(url_for('dashboard'))
-        
     except Exception as e:
-        print(f"OAuth error: {str(e)}")
-        print(f"Error type: {type(e)}")
-        flash(f'Login failed: {str(e)}', 'error')
+        print(f"Google OAuth error: {e}")
+        flash('Google login failed. Please try again.', 'error')
         return redirect(url_for('login'))
 
 @app.route("/logout")
 def logout():
+    """Logout user"""
     session.pop('user', None)
-    flash('You have been logged out.', 'info')
     return redirect(url_for('home'))
 
 @app.route("/dashboard")
 def dashboard():
+    """User dashboard"""
     if 'user' not in session:
         return redirect(url_for('login'))
     
     user_id = session['user']['id']
     
-    # Get user subscription and usage stats
-    subscription = subscription_mgr.get_user_subscription(user_id)
-    usage_stats = subscription_mgr.get_usage_stats(user_id)
-    
-    # Get recent scraped emails
-    scraper = email_scraper.EmailScraper()
-    recent_emails = scraper.get_user_scraped_emails(user_id, limit=10)
-    
-    # Get recent campaigns
-    conn = sqlite3.connect("outreachpilot.db")
+    # Get user stats
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute("""
-        SELECT id, name, status, created_at, 
-               (SELECT COUNT(*) FROM email_queue WHERE campaign_id = campaigns.id) as recipient_count
-        FROM campaigns 
-        WHERE user_id = ? 
-        ORDER BY created_at DESC 
-        LIMIT 5
-    """, (user_id,))
-    recent_campaigns = c.fetchall()
+    
+    # Get campaigns count
+    c.execute("SELECT COUNT(*) FROM campaigns WHERE user_id = ?", (user_id,))
+    campaigns_count = c.fetchone()[0]
+    
+    # Get emails found today
+    c.execute("SELECT SUM(emails_found) FROM email_usage WHERE user_id = ? AND date = DATE('now')", (user_id,))
+    emails_today = c.fetchone()[0] or 0
+    
+    # Get total emails found
+    c.execute("SELECT SUM(emails_found) FROM email_usage WHERE user_id = ?", (user_id,))
+    total_emails = c.fetchone()[0] or 0
+    
+    # Get subscription status
+    c.execute("SELECT s.plan_id, s.status FROM subscriptions s WHERE s.user_id = ? AND s.status = 'active' ORDER BY s.created_at DESC LIMIT 1", (user_id,))
+    subscription = c.fetchone()
+    
     conn.close()
     
     return render_template("dashboard.html", 
                          user=session['user'],
-                         subscription=subscription,
-                         usage_stats=usage_stats,
-                         recent_emails=recent_emails,
-                         recent_campaigns=recent_campaigns)
+                         campaigns_count=campaigns_count,
+                         emails_today=emails_today,
+                         total_emails=total_emails,
+                         subscription=subscription)
 
 @app.route("/scrape")
 def scrape_page():
+    """Email scraping page"""
     if 'user' not in session:
         return redirect(url_for('login'))
-    return render_template("scrape_enhanced.html", user=session['user'])
+    return render_template("scrape.html")
 
 @app.route("/scrape-enhanced")
 def scrape_enhanced_page():
+    """Enhanced email scraping page"""
     if 'user' not in session:
         return redirect(url_for('login'))
-    return render_template("scrape_enhanced.html", user=session['user'])
+    return render_template("scrape_enhanced.html")
 
 @app.route("/campaigns")
 def campaigns_page():
+    """Campaigns management page"""
     if 'user' not in session:
         return redirect(url_for('login'))
     
     user_id = session['user']['id']
-    
-    # Get all campaigns
-    conn = sqlite3.connect("outreachpilot.db")
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute("""
-        SELECT id, name, subject, status, created_at, scheduled_time,
-               (SELECT COUNT(*) FROM email_queue WHERE campaign_id = campaigns.id) as recipient_count,
-               (SELECT COUNT(*) FROM email_queue WHERE campaign_id = campaigns.id AND status = 'sent') as sent_count
-        FROM campaigns 
-        WHERE user_id = ? 
-        ORDER BY created_at DESC
-    """, (user_id,))
+    
+    c.execute("SELECT id, name, status, created_at, emails FROM campaigns WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
     campaigns = c.fetchall()
+    
     conn.close()
     
-    return render_template("campaigns.html", user=session['user'], campaigns=campaigns)
+    return render_template("campaigns.html", campaigns=campaigns)
 
 @app.route("/campaigns/new", methods=['GET', 'POST'])
 def new_campaign():
+    """Create new campaign"""
     if 'user' not in session:
         return redirect(url_for('login'))
     
     if request.method == 'POST':
+        name = request.form.get('name')
+        emails = request.form.get('emails')
+        
+        if not name or not emails:
+            flash('Campaign name and emails are required', 'error')
+            return render_template("new_campaign.html")
+        
         user_id = session['user']['id']
-        
-        # Check campaign limits
-        limit_check = subscription_mgr.check_limit(user_id, 'campaigns')
-        if not limit_check['allowed']:
-            flash(f'Campaign limit reached ({limit_check["current"]}/{limit_check["limit"]})', 'error')
-            return redirect(url_for('campaigns_page'))
-        
-        # Create campaign
-        campaign_data = {
-            'name': request.form['name'],
-            'subject': request.form['subject'],
-            'body': request.form['body'],
-            'from_name': request.form.get('from_name', session['user']['name']),
-            'reply_to': request.form.get('reply_to', session['user']['email']),
-            'recipients': request.form['recipients'].split('\n') if request.form['recipients'] else [],
-            'scheduled_time': request.form.get('scheduled_time')
-        }
-        
-        result = email_sender.create_campaign(user_id, campaign_data)
-        
-        if result['success']:
-            flash('Campaign created successfully!', 'success')
-            return redirect(url_for('campaigns_page'))
-        else:
-            flash(f'Error creating campaign: {result["error"]}', 'error')
-    
-    return render_template("new_campaign.html", user=session['user'])
-
-@app.route("/campaigns/<int:campaign_id>/send", methods=['POST'])
-def send_campaign(campaign_id):
-    if 'user' not in session:
-        return jsonify({'success': False, 'error': 'Not authenticated'})
-    
-    user_id = session['user']['id']
-    
-    # Verify campaign belongs to user
-    conn = sqlite3.connect("outreachpilot.db")
-    c = conn.cursor()
-    c.execute("SELECT user_id FROM campaigns WHERE id = ?", (campaign_id,))
-    result = c.fetchone()
-    conn.close()
-    
-    if not result or result[0] != user_id:
-        return jsonify({'success': False, 'error': 'Campaign not found'})
-    
-    # Send campaign
-    result = email_sender.send_campaign(campaign_id)
-    return jsonify(result)
-
-@app.route("/subscription")
-def subscription_page():
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    
-    user_id = session['user']['id']
-    
-    if subscription_mgr is None:
-        flash('Subscription service is not available', 'error')
-        return render_template("subscription.html", 
-                             user=session['user'],
-                             subscription=None,
-                             usage_stats={},
-                             plans=subscription_manager.SubscriptionPlans.PLANS)
-    
-    try:
-        subscription = subscription_mgr.get_user_subscription(user_id)
-        usage_stats = subscription_mgr.get_usage_stats(user_id)
-        
-        return render_template("subscription.html", 
-                             user=session['user'],
-                             subscription=subscription,
-                             usage_stats=usage_stats,
-                             plans=subscription_manager.SubscriptionPlans.PLANS)
-    except Exception as e:
-        print(f"Error in subscription_page: {e}")
-        flash('Error loading subscription information', 'error')
-        return render_template("subscription.html", 
-                             user=session['user'],
-                             subscription=None,
-                             usage_stats={},
-                             plans=subscription_manager.SubscriptionPlans.PLANS)
-
-@app.route("/subscription/upgrade/<plan_id>")
-def upgrade_subscription(plan_id):
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    
-    if not subscription_mgr:
-        flash('Subscription service is not available', 'error')
-        return redirect(url_for('subscription_page'))
-    
-    user_id = session['user']['id']
-    
-    try:
-        # Create checkout session using subscription manager
-        checkout_session = subscription_mgr.create_checkout_session(user_id, plan_id)
-        
-        if checkout_session and 'url' in checkout_session:
-            return redirect(checkout_session['url'])
-        else:
-            flash('Error creating checkout session', 'error')
-            return redirect(url_for('subscription_page'))
-    except Exception as e:
-        print(f"Error in upgrade_subscription: {e}")
-        flash('Error creating checkout session', 'error')
-        return redirect(url_for('subscription_page'))
-
-@app.route("/subscription/success")
-def subscription_success():
-    """Handle successful subscription"""
-    session_id = request.args.get('session_id')
-    
-    if not session_id:
-        flash('Invalid subscription session', 'error')
-        return redirect(url_for('subscription_page'))
-    
-    try:
-        # Retrieve the session from Stripe
-        import stripe
-        stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
-        
-        checkout_session = stripe.checkout.Session.retrieve(session_id)
-        
-        # Get user info from metadata
-        user_id = int(checkout_session.metadata.get('user_id'))
-        plan_id = checkout_session.metadata.get('plan_id')
-        
-        # Update user subscription in database
-        conn = sqlite3.connect("outreachpilot.db")
+        conn = get_db_connection()
         c = conn.cursor()
         
-        c.execute("""
-            INSERT OR REPLACE INTO subscriptions 
-            (user_id, tier, stripe_customer_id, stripe_subscription_id, status, 
-             current_period_start, current_period_end, updated_at)
-            VALUES (?, ?, ?, ?, 'active', CURRENT_TIMESTAMP, 
-                    datetime('now', '+1 month'), CURRENT_TIMESTAMP)
-        """, (user_id, plan_id, checkout_session.customer, checkout_session.subscription))
+        c.execute("INSERT INTO campaigns (user_id, name, emails, status) VALUES (?, ?, ?, ?)", 
+                 (user_id, name, emails, 'draft'))
+        campaign_id = c.lastrowid
+        
+        # Update email usage
+        email_count = len([e for e in emails.split('\n') if e.strip()])
+        c.execute("INSERT OR REPLACE INTO email_usage (user_id, emails_found, date) VALUES (?, ?, DATE('now'))", 
+                 (user_id, email_count))
         
         conn.commit()
         conn.close()
         
-        flash(f'Successfully subscribed to {plan_id.title()} plan!', 'success')
+        flash('Campaign created successfully!', 'success')
+        return redirect(url_for('campaigns_page'))
+    
+    return render_template("new_campaign.html")
+
+@app.route("/campaigns/<int:campaign_id>/send", methods=['POST'])
+def send_campaign(campaign_id):
+    """Send campaign emails"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user_id = session['user']['id']
+    
+    # Verify campaign ownership
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT name, emails FROM campaigns WHERE id = ? AND user_id = ?", (campaign_id, user_id))
+    campaign = c.fetchone()
+    
+    if not campaign:
+        conn.close()
+        return jsonify({'error': 'Campaign not found'}), 404
+    
+    campaign_name, emails_text = campaign
+    
+    # Update campaign status
+    c.execute("UPDATE campaigns SET status = 'sent', sent_at = DATETIME('now') WHERE id = ?", (campaign_id,))
+    conn.commit()
+    conn.close()
+    
+    # Send emails (simplified - in production you'd use proper email service)
+    email_list = [e.strip() for e in emails_text.split('\n') if e.strip()]
+    
+    # Update email usage
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("UPDATE email_usage SET emails_sent = emails_sent + ? WHERE user_id = ? AND date = DATE('now')", 
+             (len(email_list), user_id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'emails_sent': len(email_list)})
+
+@app.route("/subscription")
+def subscription_page():
+    """Subscription management page"""
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
+    user_id = session['user']['id']
+    
+    # Get current subscription
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT s.plan_id, s.status, s.stripe_subscription_id FROM subscriptions s WHERE s.user_id = ? AND s.status = 'active' ORDER BY s.created_at DESC LIMIT 1", (user_id,))
+    subscription = c.fetchone()
+    
+    # Get available plans
+    plans = [
+        {'id': 'free', 'name': 'Free', 'price': 0, 'emails_per_month': 100, 'features': ['Basic email scraping', 'Simple campaigns']},
+        {'id': 'starter', 'name': 'Starter', 'price': 29, 'emails_per_month': 1000, 'features': ['Advanced scraping', 'Campaign management', 'Email verification']},
+        {'id': 'professional', 'name': 'Professional', 'price': 99, 'emails_per_month': 10000, 'features': ['Unlimited scraping', 'Advanced analytics', 'Priority support']},
+        {'id': 'enterprise', 'name': 'Enterprise', 'price': 299, 'emails_per_month': 100000, 'features': ['Custom integrations', 'Dedicated support', 'SLA guarantee']}
+    ]
+    
+    conn.close()
+    
+    return render_template("subscription.html", 
+                         subscription=subscription,
+                         plans=plans,
+                         stripe_public_key=app.config.get('STRIPE_PUBLISHABLE_KEY'))
+
+@app.route("/subscription/upgrade/<plan_id>")
+def upgrade_subscription(plan_id):
+    """Upgrade subscription page"""
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
+    # Get plan details
+    plans = {
+        'basic': {'name': 'Basic', 'price': 29, 'stripe_price_id': 'price_basic'},
+        'pro': {'name': 'Pro', 'price': 79, 'stripe_price_id': 'price_pro'},
+        'enterprise': {'name': 'Enterprise', 'price': 199, 'stripe_price_id': 'price_enterprise'}
+    }
+    
+    if plan_id not in plans:
+        return redirect(url_for('subscription_page'))
+    
+    plan = plans[plan_id]
+    return render_template("subscription_upgrade.html", plan=plan)
+
+@app.route("/subscription/create-checkout-session", methods=['POST'])
+def create_checkout_session():
+    """Create Stripe checkout session"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    data = request.get_json()
+    plan_id = data.get('plan_id')
+    
+    if not plan_id:
+        return jsonify({'error': 'Plan ID required'}), 400
+    
+    # Get plan details
+    plans = {
+        'basic': {'name': 'Basic', 'price': 29, 'stripe_price_id': 'price_basic'},
+        'pro': {'name': 'Pro', 'price': 79, 'stripe_price_id': 'price_pro'},
+        'enterprise': {'name': 'Enterprise', 'price': 199, 'stripe_price_id': 'price_enterprise'}
+    }
+    
+    if plan_id not in plans:
+        return jsonify({'error': 'Invalid plan ID'}), 400
+    
+    plan = plans[plan_id]
+    user_id = session['user']['id']
+    
+    try:
+        # Create Stripe checkout session
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price': plan['stripe_price_id'],
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=request.host_url + 'subscription/success',
+            cancel_url=request.host_url + 'subscription',
+            client_reference_id=str(user_id),
+            metadata={'plan_id': plan_id}
+        )
+        
+        return jsonify({'session_id': checkout_session.id})
         
     except Exception as e:
-        print(f"Error processing subscription success: {e}")
-        flash('Error processing subscription. Please contact support.', 'error')
+        print(f"Error creating checkout session: {e}")
+        return jsonify({'error': 'Error creating checkout session'}), 500
+
+@app.route("/subscription/success")
+def subscription_success():
+    """Subscription success page"""
+    if 'user' not in session:
+        return redirect(url_for('login'))
     
-    return redirect(url_for('subscription_page'))
+    return render_template("subscription_success.html")
 
 @app.route("/subscription/cancel", methods=['POST'])
 def cancel_subscription():
+    """Cancel subscription"""
     if 'user' not in session:
-        return jsonify({'success': False, 'error': 'Not authenticated'})
-    
-    if subscription_mgr is None:
-        flash('Subscription service is not available', 'error')
-        return redirect(url_for('subscription_page'))
+        return jsonify({'error': 'Not authenticated'}), 401
     
     user_id = session['user']['id']
     
     try:
-        success = subscription_mgr.cancel_subscription(user_id)
+        # Get subscription ID
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("SELECT stripe_subscription_id FROM subscriptions WHERE user_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT 1", (user_id,))
+        subscription = c.fetchone()
         
-        if success:
-            flash('Subscription cancelled successfully', 'success')
+        if subscription and subscription[0]:
+            # Cancel in Stripe
+            stripe.Subscription.modify(
+                subscription[0],
+                cancel_at_period_end=True
+            )
+            
+            # Update local database
+            c.execute("UPDATE subscriptions SET status = 'cancelled' WHERE user_id = ? AND status = 'active'", (user_id,))
+            conn.commit()
+            
+            conn.close()
+            return jsonify({'success': True, 'message': 'Subscription cancelled successfully'})
         else:
-            flash('Error cancelling subscription', 'error')
+            conn.close()
+            return jsonify({'error': 'No active subscription found'}), 404
+            
     except Exception as e:
-        print(f"Error in cancel_subscription: {e}")
-        flash('Error cancelling subscription', 'error')
-    
-    return redirect(url_for('subscription_page'))
+        print(f"Error cancelling subscription: {e}")
+        return jsonify({'error': 'Error cancelling subscription'}), 500
 
 @app.route("/terms")
 def terms():
-    """Terms of Service page"""
+    """Terms of service page"""
     return render_template("terms.html")
 
 @app.route("/privacy")
 def privacy():
-    """Privacy Policy page"""
+    """Privacy policy page"""
     return render_template("privacy.html")
 
 @app.route("/webhook/stripe", methods=['POST'])
 def stripe_webhook():
-    """Handle Stripe webhooks"""
-    import stripe
-    stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
-    
+    """Stripe webhook handler"""
     payload = request.get_data()
     sig_header = request.headers.get('Stripe-Signature')
-    webhook_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
-    
-    if not webhook_secret:
-        print("Warning: No webhook secret configured")
-        return 'Webhook secret not configured', 500
     
     try:
         event = stripe.Webhook.construct_event(
-            payload, sig_header, webhook_secret
+            payload, sig_header, app.config.get('STRIPE_WEBHOOK_SECRET', '')
         )
     except ValueError as e:
-        print(f"Invalid payload: {e}")
         return 'Invalid payload', 400
     except stripe.error.SignatureVerificationError as e:
-        print(f"Invalid signature: {e}")
         return 'Invalid signature', 400
     
-    # Handle the event
-    if subscription_mgr:
-        success = subscription_mgr.handle_webhook(event)
-        if success:
-            return 'OK', 200
-        else:
-            return 'Error processing webhook', 500
-    else:
-        print("Subscription manager not initialized")
-        return 'Service unavailable', 503
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        user_id = int(session['client_reference_id'])
+        plan_id = session['metadata']['plan_id']
+        
+        # Create subscription record
+        conn = get_db_connection()
+        c = conn.cursor()
+        
+        # Cancel any existing active subscriptions
+        c.execute("UPDATE subscriptions SET status = 'cancelled' WHERE user_id = ? AND status = 'active'", (user_id,))
+        
+        # Create new subscription
+        c.execute("INSERT INTO subscriptions (user_id, plan_id, status, stripe_subscription_id) VALUES (?, ?, 'active', ?)", 
+                 (user_id, plan_id, session['subscription']))
+        
+        conn.commit()
+        conn.close()
+        
+        return 'Success', 200
+    
+    return 'Success', 200
 
 @app.route("/api/usage")
 def api_usage():
+    """Get user usage statistics"""
     if 'user' not in session:
-        return jsonify({'success': False, 'error': 'Not authenticated'})
+        return jsonify({'error': 'Not authenticated'}), 401
     
     user_id = session['user']['id']
-    usage_stats = subscription_mgr.get_usage_stats(user_id)
+    
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    # Get today's usage
+    c.execute("SELECT emails_found, emails_sent FROM email_usage WHERE user_id = ? AND date = DATE('now')", (user_id,))
+    today_usage = c.fetchone() or (0, 0)
+    
+    # Get monthly usage
+    c.execute("SELECT SUM(emails_found), SUM(emails_sent) FROM email_usage WHERE user_id = ? AND date >= DATE('now', 'start of month')", (user_id,))
+    monthly_usage = c.fetchone() or (0, 0)
+    
+    # Get total usage
+    c.execute("SELECT SUM(emails_found), SUM(emails_sent) FROM email_usage WHERE user_id = ?", (user_id,))
+    total_usage = c.fetchone() or (0, 0)
+    
+    conn.close()
     
     return jsonify({
-        'success': True,
-        'usage': usage_stats
+        'today': {'found': today_usage[0], 'sent': today_usage[1]},
+        'month': {'found': monthly_usage[0], 'sent': monthly_usage[1]},
+        'total': {'found': total_usage[0], 'sent': total_usage[1]}
     })
 
 @app.route("/api/search/infinite", methods=['POST'])
 def search_infinite_emails():
-    """API endpoint for infinite email search"""
-    print("Infinite search API called")
-    
+    """Infinite email search API"""
     if 'user' not in session:
-        print("User not authenticated")
-        return jsonify({'success': False, 'error': 'Not authenticated'})
+        return jsonify({'error': 'Not authenticated'}), 401
     
-    user_id = session['user']['id']
-    print(f"User ID: {user_id}")
+    data = request.get_json()
+    query = data.get('query', '')
+    filters = data.get('filters', {})
+    
+    if not query:
+        return jsonify({'error': 'Query is required'}), 400
     
     try:
-        data = request.get_json()
-        print(f"Request data: {data}")
+        # Use enhanced scraper
+        emails = email_finder.search_niche_emails(query, filters)
         
-        industry = data.get('industry')
-        location = data.get('location')
-        company_size = data.get('company_size')
-        limit = data.get('limit', 1000)
-        
-        print(f"Search params: industry={industry}, location={location}, size={company_size}, limit={limit}")
-        
-        # Check subscription limits
-        limit_check = subscription_mgr.check_limit(user_id, 'scrapes')
-        print(f"Limit check: {limit_check}")
-        
-        if not limit_check['allowed']:
-            return jsonify({
-                'success': False, 
-                'error': f'Search limit reached ({limit_check["current"]}/{limit_check["limit"]})'
-            })
-        
-        # Perform infinite email search
-        result = infinite_email_db.search_infinite_emails(
-            industry=industry,
-            location=location,
-            company_size=company_size,
-            limit=limit
-        )
-        
-        print(f"Search result: {result}")
-        
-        if result['success']:
-            # Increment usage
-            subscription_mgr.increment_usage(user_id, 'scrapes')
-            
-            # Save emails to database
-            for email in result['emails']:
-                infinite_email_db.add_email_to_database(
-                    email=email,
-                    industry=industry,
-                    source='infinite_search'
-                )
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        print(f"Error in infinite search: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-
-@app.route("/api/search/advanced", methods=['POST'])
-def advanced_search():
-    """Advanced search with comprehensive targeting options"""
-    print("Advanced search API called")
-    
-    if 'user' not in session:
-        print("User not authenticated")
-        return jsonify({'success': False, 'error': 'Not authenticated'})
-    
-    user_id = session['user']['id']
-    print(f"User ID: {user_id}")
-    
-    try:
-        data = request.get_json()
-        print(f"Advanced search data: {data}")
-        
-        industry = data.get('industry')
-        subcategory = data.get('subcategory')
-        size = data.get('size')
-        revenue = data.get('revenue')
-        location = data.get('location')
-        titles = data.get('titles', [])
-        tech = data.get('tech', [])
-        social = data.get('social', [])
-        environmental = data.get('environmental')
-        
-        # Use the infinite email database with advanced filters
-        if infinite_email_db is None:
-            return jsonify({'success': False, 'error': 'Email database not available'})
-        
-        # Create a comprehensive search query
-        search_params = {
-            'industry': industry,
-            'subcategory': subcategory,
-            'location': location,
-            'company_size': size,
-            'limit': 1000  # Default limit for advanced search
-        }
-        
-        # Add additional filters
-        if revenue:
-            search_params['revenue'] = revenue
-        if titles:
-            search_params['job_titles'] = titles
-        if tech:
-            search_params['technology'] = tech
-        if social:
-            search_params['social_impact'] = social
-        if environmental:
-            search_params['environmental'] = environmental
-        
-        print(f"Searching with params: {search_params}")
-        
-        # Perform the search
-        result = infinite_email_db.search_infinite_emails(**search_params)
-        
-        if result and result.get('emails'):
-            return jsonify({
-                'success': True,
-                'emails': result['emails'],
-                'emails_found': result.get('emails_found', len(result['emails'])),
-                'emails_returned': len(result['emails']),
-                'sources_used': result.get('sources_used', ['Advanced Database']),
-                'search_criteria': search_params,
-                'note': f"Advanced search with {len(search_params)} targeting filters"
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'No emails found with the specified criteria',
-                'search_criteria': search_params
-            })
-            
-    except Exception as e:
-        print(f"Error in advanced search: {e}")
-        return jsonify({'success': False, 'error': str(e)})
-
-@app.route("/api/search/universal", methods=['POST'])
-def universal_search():
-    """Universal email search endpoint"""
-    if 'user' not in session:
-        return jsonify({'success': False, 'error': 'Not authenticated'})
-    
-    user_id = session['user']['id']
-    
-    try:
-        data = request.get_json()
-        domain = data.get('domain', '').strip()
-        company = data.get('company', '').strip()
-        location = data.get('location', '').strip()
-        
-        if not domain and not company:
-            return jsonify({'success': False, 'error': 'Domain or company is required'})
-        
-        # Check subscription limits
-        if subscription_mgr:
-            limit_check = subscription_mgr.check_limit(user_id, 'scrapes')
-            if not limit_check['allowed']:
-                return jsonify({
-                    'success': False, 
-                    'error': f'Search limit reached ({limit_check["current"]}/{limit_check["limit"]})'
-                })
-        
-        # Generate sample emails for demonstration
-        emails = []
-        if domain:
-            # Generate sample emails for the domain
-            sample_names = ['john', 'jane', 'mike', 'sarah', 'david', 'lisa', 'chris', 'emma', 'alex', 'maria']
-            for name in sample_names:
-                emails.append({
-                    'email': f'{name}@{domain}',
-                    'domain': domain,
-                    'source': 'Generated'
-                })
-        elif company:
-            # Generate sample emails for the company
-            domain = company.lower().replace(' ', '').replace('&', '') + '.com'
-            sample_names = ['john', 'jane', 'mike', 'sarah', 'david', 'lisa', 'chris', 'emma', 'alex', 'maria']
-            for name in sample_names:
-                emails.append({
-                    'email': f'{name}@{domain}',
-                    'domain': domain,
-                    'source': 'Generated'
-                })
-        
-        # Increment usage if subscription manager is available
-        if subscription_mgr:
-            subscription_mgr.increment_usage(user_id, 'scrapes')
+        # Update usage
+        user_id = session['user']['id']
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("INSERT OR REPLACE INTO email_usage (user_id, emails_found, date) VALUES (?, ?, DATE('now'))", 
+                 (user_id, len(emails)))
+        conn.commit()
+        conn.close()
         
         return jsonify({
             'success': True,
             'emails': emails,
-            'emails_found': len(emails),
-            'verified_emails': len(emails),
-            'search_methods': ['Universal Database'],
-            'coverage': 'Global',
-            'sources_used': ['Universal Database'],
-            'verification_results': {}
+            'count': len(emails),
+            'query': query
         })
+        
+    except Exception as e:
+        print(f"Error in infinite search: {e}")
+        return jsonify({'error': 'Search failed'}), 500
+
+@app.route("/api/search/advanced", methods=['POST'])
+def advanced_search():
+    """Advanced email search API"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    data = request.get_json()
+    query = data.get('query', '')
+    filters = data.get('filters', {})
+    source = data.get('source', 'all')
+    
+    if not query:
+        return jsonify({'error': 'Query is required'}), 400
+    
+    try:
+        emails = []
+        
+        if source == 'all' or source == 'google':
+            google_emails = email_finder._search_google_emails(query, filters)
+            emails.extend(google_emails)
+        
+        if source == 'all' or source == 'linkedin':
+            linkedin_emails = email_finder._search_linkedin_emails(query, filters)
+            emails.extend(linkedin_emails)
+        
+        if source == 'all' or source == 'directories':
+            directory_emails = email_finder._search_business_directories(query, filters)
+            emails.extend(directory_emails)
+        
+        if source == 'all' or source == 'social':
+            social_emails = email_finder._search_social_media_emails(query, filters)
+            emails.extend(social_emails)
+        
+        if source == 'all' or source == 'github':
+            github_emails = email_finder._search_github_emails(query, filters)
+            emails.extend(github_emails)
+        
+        # Remove duplicates
+        unique_emails = list(set(emails))
+        
+        # Update usage
+        user_id = session['user']['id']
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("INSERT OR REPLACE INTO email_usage (user_id, emails_found, date) VALUES (?, ?, DATE('now'))", 
+                 (user_id, len(unique_emails)))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'emails': unique_emails,
+            'count': len(unique_emails),
+            'query': query,
+            'source': source
+        })
+        
+    except Exception as e:
+        print(f"Error in advanced search: {e}")
+        return jsonify({'error': 'Search failed'}), 500
+
+@app.route("/api/search/universal", methods=['POST'])
+def universal_search():
+    """Universal email search API"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    data = request.get_json()
+    query = data.get('query', '')
+    filters = data.get('filters', {})
+    
+    if not query:
+        return jsonify({'error': 'Query is required'}), 400
+    
+    try:
+        # Use universal email finder
+        finder = EmailFinder()
+        results = finder.find_emails_universal(query, filters)
+        
+        # Update usage
+        user_id = session['user']['id']
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("INSERT OR REPLACE INTO email_usage (user_id, emails_found, date) VALUES (?, ?, DATE('now'))", 
+                 (user_id, len(results.get('emails', []))))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'results': results,
+            'query': query
+        })
+        
+    except Exception as e:
+        print(f"Error in universal search: {e}")
+        return jsonify({'error': 'Search failed'}), 500
+
+@app.route("/api/scrape-website", methods=['POST'])
+def scrape_website():
+    """Scrape emails from a specific website"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    data = request.get_json()
+    url = data.get('url', '')
+    
+    if not url:
+        return jsonify({'error': 'URL is required'}), 400
+    
+    try:
+        # Use enhanced scraper
+        emails = email_finder.scrape_website_emails(url)
+        
+        # Update usage
+        user_id = session['user']['id']
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("INSERT OR REPLACE INTO email_usage (user_id, emails_found, date) VALUES (?, ?, DATE('now'))", 
+                 (user_id, len(emails)))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'emails': emails,
+            'count': len(emails),
+            'url': url
+        })
+        
+    except Exception as e:
+        print(f"Error scraping website: {e}")
+        return jsonify({'error': 'Scraping failed'}), 500
+
+@app.route("/api/export-emails", methods=['POST'])
+def export_emails():
+    """Export emails to CSV"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    data = request.get_json()
+    emails = data.get('emails', [])
+    format_type = data.get('format', 'csv')
+    
+    if not emails:
+        return jsonify({'error': 'No emails to export'}), 400
+    
+    try:
+        if format_type == 'csv':
+            # Create CSV content
+            output = StringIO()
+            writer = csv.writer(output)
+            writer.writerow(['Email', 'Source', 'Date'])
+            
+            for email in emails:
+                writer.writerow([email, 'OutreachPilotPro', datetime.now().strftime('%Y-%m-%d')])
+            
+            csv_content = output.getvalue()
+            output.close()
+            
+            response = make_response(csv_content)
+            response.headers['Content-Type'] = 'text/csv'
+            response.headers['Content-Disposition'] = 'attachment; filename=emails.csv'
+            return response
+        
+        else:
+            return jsonify({'error': 'Unsupported format'}), 400
             
     except Exception as e:
-        print(f"Universal search error: {e}")
-        return jsonify({'success': False, 'error': 'Search failed'})
+        print(f"Error exporting emails: {e}")
+        return jsonify({'error': 'Export failed'}), 500
 
-# Helper functions
+@app.route("/api/health")
+def health_check():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'version': '2.0.0'
+    })
+
+@app.route("/api/email-search", methods=['POST'])
+def email_search():
+    """Search for emails based on query and filters"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    data = request.get_json()
+    query = data.get('query', '')
+    search_type = data.get('search_type', 'niche')
+    filters = data.get('filters', {})
+    
+    if not query:
+        return jsonify({'error': 'Query is required'}), 400
+    
+    try:
+        # Use the consolidated email finder service
+        email_finder = EmailFinder()
+        
+        if search_type == 'niche':
+            emails = email_finder.search_niche_emails(query, filters)
+        else:
+            emails = email_finder.search_emails(query, filters)
+        
+        # Convert to list if it's a set
+        if isinstance(emails, set):
+            emails = list(emails)
+        
+        # Format response
+        email_list = []
+        for email in emails:
+            if isinstance(email, str):
+                email_list.append({
+                    'email': email,
+                    'source': 'search',
+                    'verified': True
+                })
+            else:
+                email_list.append(email)
+        
+        return jsonify({
+            'success': True,
+            'emails': email_list,
+            'count': len(email_list),
+            'query': query,
+            'filters': filters
+        })
+        
+    except Exception as e:
+        print(f"Error in email search: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/api/campaigns/create", methods=['POST'])
+def create_campaign():
+    """Create a new email campaign"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    data = request.get_json()
+    campaign_name = data.get('name')
+    subject_line = data.get('subject')
+    email_content = data.get('content')
+    sender_name = data.get('sender_name')
+    send_delay = data.get('send_delay', 0)
+    max_emails_per_hour = data.get('max_emails_per_hour', 100)
+    emails = data.get('emails', [])
+    
+    if not all([campaign_name, subject_line, email_content, sender_name, emails]):
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        
+        # Create campaign
+        c.execute("""
+            INSERT INTO campaigns (user_id, name, subject, content, sender_name, 
+                                 send_delay, max_emails_per_hour, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATETIME('now'))
+        """, (session['user']['id'], campaign_name, subject_line, email_content, 
+              sender_name, send_delay, max_emails_per_hour, 'draft'))
+        
+        campaign_id = c.lastrowid
+        
+        # Add emails to campaign
+        for email in emails:
+            c.execute("""
+                INSERT INTO campaign_emails (campaign_id, email, status)
+                VALUES (?, ?, 'pending')
+            """, (campaign_id, email))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'campaign_id': campaign_id,
+            'message': 'Campaign created successfully'
+        })
+        
+    except Exception as e:
+        print(f"Error creating campaign: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/api/campaigns/<int:campaign_id>/start", methods=['POST'])
+def start_campaign(campaign_id):
+    """Start a campaign"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        
+        # Check if campaign belongs to user
+        c.execute("SELECT id FROM campaigns WHERE id = ? AND user_id = ?", 
+                 (campaign_id, session['user']['id']))
+        campaign = c.fetchone()
+        
+        if not campaign:
+            conn.close()
+            return jsonify({'error': 'Campaign not found'}), 404
+        
+        # Update campaign status
+        c.execute("UPDATE campaigns SET status = 'active', started_at = DATETIME('now') WHERE id = ?", 
+                 (campaign_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Campaign started'})
+        
+    except Exception as e:
+        print(f"Error starting campaign: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/api/campaigns/<int:campaign_id>/pause", methods=['POST'])
+def pause_campaign(campaign_id):
+    """Pause a campaign"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        
+        # Check if campaign belongs to user
+        c.execute("SELECT id FROM campaigns WHERE id = ? AND user_id = ?", 
+                 (campaign_id, session['user']['id']))
+        campaign = c.fetchone()
+        
+        if not campaign:
+            conn.close()
+            return jsonify({'error': 'Campaign not found'}), 404
+        
+        # Update campaign status
+        c.execute("UPDATE campaigns SET status = 'paused' WHERE id = ?", (campaign_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Campaign paused'})
+        
+    except Exception as e:
+        print(f"Error pausing campaign: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/api/campaigns/<int:campaign_id>/resume", methods=['POST'])
+def resume_campaign(campaign_id):
+    """Resume a campaign"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        
+        # Check if campaign belongs to user
+        c.execute("SELECT id FROM campaigns WHERE id = ? AND user_id = ?", 
+                 (campaign_id, session['user']['id']))
+        campaign = c.fetchone()
+        
+        if not campaign:
+            conn.close()
+            return jsonify({'error': 'Campaign not found'}), 404
+        
+        # Update campaign status
+        c.execute("UPDATE campaigns SET status = 'active' WHERE id = ?", (campaign_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Campaign resumed'})
+        
+    except Exception as e:
+        print(f"Error resuming campaign: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/api/campaigns/<int:campaign_id>", methods=['DELETE'])
+def delete_campaign(campaign_id):
+    """Delete a campaign"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        
+        # Check if campaign belongs to user
+        c.execute("SELECT id FROM campaigns WHERE id = ? AND user_id = ?", 
+                 (campaign_id, session['user']['id']))
+        campaign = c.fetchone()
+        
+        if not campaign:
+            conn.close()
+            return jsonify({'error': 'Campaign not found'}), 404
+        
+        # Delete campaign emails first
+        c.execute("DELETE FROM campaign_emails WHERE campaign_id = ?", (campaign_id,))
+        
+        # Delete campaign
+        c.execute("DELETE FROM campaigns WHERE id = ?", (campaign_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Campaign deleted'})
+        
+    except Exception as e:
+        print(f"Error deleting campaign: {e}")
+        return jsonify({'error': str(e)}), 500
+
 def get_or_create_user(user_info):
     """Get or create user from Google OAuth info"""
-    conn = sqlite3.connect("outreachpilot.db")
+    email = user_info.get('email')
+    name = user_info.get('name', email.split('@')[0])
+    
+    conn = get_db_connection()
     c = conn.cursor()
     
-    # Create users table if it doesn't exist
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            name TEXT,
-            google_id TEXT UNIQUE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    
-    # Use 'id' instead of 'sub' for Google user ID
-    google_id = user_info.get('id', user_info.get('sub', ''))
-    email = user_info.get('email', '')
-    name = user_info.get('name', '')
-    
     # Check if user exists
-    c.execute("SELECT * FROM users WHERE google_id = ? OR email = ?", 
-             (google_id, email))
+    c.execute("SELECT id, email, name FROM users WHERE email = ?", (email,))
     user = c.fetchone()
     
     if user:
-        # Update user info
-        c.execute("""
-            UPDATE users SET name = ?, email = ?, google_id = ?
-            WHERE id = ?
-        """, (name, email, google_id, user[0]))
+        # Update last login
+        c.execute("UPDATE users SET last_login = DATETIME('now') WHERE id = ?", (user[0],))
+        conn.commit()
+        conn.close()
         
-        user_data = {
+        return {
             'id': user[0],
-            'email': email,
-            'name': name,
-            'google_id': google_id
+            'email': user[1],
+            'name': user[2]
         }
     else:
         # Create new user
-        c.execute("""
-            INSERT INTO users (email, name, google_id)
-            VALUES (?, ?, ?)
-        """, (email, name, google_id))
+        c.execute("INSERT INTO users (email, name) VALUES (?, ?)", (email, name))
+        user_id = c.lastrowid
+        conn.commit()
+        conn.close()
         
-        user_data = {
-            'id': c.lastrowid,
+        return {
+            'id': user_id,
             'email': email,
-            'name': name,
-            'google_id': google_id
+            'name': name
         }
-    
-    conn.commit()
-    conn.close()
-    return user_data
 
 def store_google_token(user_id, token):
-    """Store Google OAuth token for email sending"""
-    conn = sqlite3.connect("outreachpilot.db")
-    c = conn.cursor()
-    
-    # Create google_tokens table if it doesn't exist
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS google_tokens (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            access_token TEXT NOT NULL,
-            refresh_token TEXT,
-            expires_at TIMESTAMP,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )
-    """)
-    
-    # Store or update token
-    expires_at = datetime.fromtimestamp(token['expires_at']) if 'expires_at' in token else None
-    
-    c.execute("""
-        INSERT OR REPLACE INTO google_tokens 
-        (user_id, access_token, refresh_token, expires_at)
-        VALUES (?, ?, ?, ?)
-    """, (user_id, token['access_token'], token.get('refresh_token'), expires_at))
-    
-    conn.commit()
-    conn.close()
+    """Store Google OAuth token for Gmail access"""
+    # In production, you'd want to encrypt this token
+    # For now, we'll just store it in the session
+    session['google_token'] = token
 
-# Error handlers
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('404.html'), 404
@@ -830,12 +1224,6 @@ def not_found_error(error):
 def internal_error(error):
     return render_template('500.html'), 500
 
-if __name__ == "__main__":
-    try:
-        # Initialize database tables
-        subscription_mgr._init_database()
-    except Exception as e:
-        print(f"Warning: Could not initialize database: {e}")
-    
-    app.run(debug=True, host='0.0.0.0', port=8800)
+if __name__ == '__main__':
+    app.run(debug=True)
 

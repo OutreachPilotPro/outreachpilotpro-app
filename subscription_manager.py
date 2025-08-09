@@ -180,7 +180,8 @@ def create_subscription_tables():
 class SubscriptionManager:
     def __init__(self, db_path="outreachpilot.db"):
         self.db_path = db_path
-        stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+        from config import Config
+        stripe.api_key = Config.STRIPE_SECRET_KEY
         self._init_database()
     
     def _init_database(self):

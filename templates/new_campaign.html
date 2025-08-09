@@ -279,7 +279,9 @@
 <body>
     <!-- Navigation -->
     <nav class="navbar">
-        <div class="logo">OutreachPilotPro</div>
+        <div class="logo">
+            <a href="{{ url_for('home') }}" style="text-decoration: none; color: inherit;">OutreachPilotPro</a>
+        </div>
         <div class="nav-links">
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
             <a href="{{ url_for('scrape_page') }}">Find Emails</a>

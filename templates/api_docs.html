@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - OutreachPilotPro</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --primary: #4CAF50; --gradient: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%); }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8f9fa; }
+        .navbar { background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.5rem; font-weight: bold; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-links { display: flex; gap: 2rem; align-items: center; }
+        .nav-links a { text-decoration: none; color: #333; font-weight: 500; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .hero { text-align: center; padding: 4rem 0; }
+        .hero h1 { font-size: 3rem; margin-bottom: 1rem; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .api-section { background: white; border-radius: 15px; padding: 3rem; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .api-section h2 { margin-bottom: 1.5rem; color: #333; }
+        .code-block { background: #f8f9fa; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-family: monospace; }
+        .endpoint { background: #e8f5e8; border-left: 4px solid var(--primary); padding: 1rem; margin: 1rem 0; }
+        .endpoint h3 { color: var(--primary); margin-bottom: 0.5rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo"><a href="{{ url_for('home') }}" style="text-decoration: none; color: inherit;">OutreachPilotPro</a></div>
+        <div class="nav-links">
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('live_demo') }}">Demo</a>
+            <a href="{{ url_for('contact') }}">Contact</a>
+            <a href="{{ url_for('login') }}">Login</a>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="hero">
+            <h1>API Documentation</h1>
+        </div>
+        <div class="api-section">
+            <h2>Getting Started</h2>
+            <p>Our REST API allows you to integrate email discovery and outreach capabilities directly into your applications.</p>
+            
+            <div class="endpoint">
+                <h3>Base URL</h3>
+                <div class="code-block">https://api.outreachpilotpro.com/v1</div>
+            </div>
+            
+            <div class="endpoint">
+                <h3>Authentication</h3>
+                <p>All API requests require an API key in the header:</p>
+                <div class="code-block">Authorization: Bearer YOUR_API_KEY</div>
+            </div>
+            
+            <h2>Endpoints</h2>
+            
+            <div class="endpoint">
+                <h3>Find Emails</h3>
+                <p><strong>POST</strong> /emails/find</p>
+                <div class="code-block">
+{<br>
+  "company": "Acme Corp",<br>
+  "industry": "technology",<br>
+  "location": "San Francisco"<br>
+}
+                </div>
+            </div>
+            
+            <div class="endpoint">
+                <h3>Verify Email</h3>
+                <p><strong>POST</strong> /emails/verify</p>
+                <div class="code-block">
+{<br>
+  "email": "john.doe@example.com"<br>
+}
+                </div>
+            </div>
+            
+            <div class="endpoint">
+                <h3>Create Campaign</h3>
+                <p><strong>POST</strong> /campaigns/create</p>
+                <div class="code-block">
+{<br>
+  "name": "Q1 Outreach",<br>
+  "subject": "Partnership Opportunity",<br>
+  "body": "Hi {{name}}, I'd love to discuss..."<br>
+}
+                </div>
+            </div>
+            
+            <p><em>Full documentation coming soon. Contact us for early access to the API.</em></p>
+        </div>
+    </div>
+</body>
+</html>

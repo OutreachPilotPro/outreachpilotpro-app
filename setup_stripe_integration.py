@@ -21,11 +21,12 @@ def main():
         return False
     
     # Check for required environment variables
+    from config import Config
     required_vars = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET']
     missing_vars = []
     
     for var in required_vars:
-        if not os.environ.get(var) or os.environ.get(var) == 'your-stripe-secret-key':
+        if not getattr(Config, var, None) or getattr(Config, var, '') == 'your-stripe-secret-key':
             missing_vars.append(var)
     
     if missing_vars:
@@ -64,7 +65,7 @@ def main():
     # Test Stripe connection
     try:
         import stripe
-        stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+        stripe.api_key = Config.STRIPE_SECRET_KEY
         account = stripe.Account.retrieve()
         print(f"✅ Connected to Stripe account: {account.email}")
         
