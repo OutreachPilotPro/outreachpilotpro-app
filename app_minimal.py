@@ -15,6 +15,13 @@ load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
+# Placeholder user data for templates
+PLACEHOLDER_USER = {
+    'name': 'Demo User',
+    'email': 'demo@outreachpilotpro.com',
+    'plan': 'starter'
+}
+
 # Routes
 @app.route('/')
 def index():
@@ -35,7 +42,7 @@ def signup():
 
 @app.route('/dashboard')
 def dashboard():
-    return render_template('dashboard.html')
+    return render_template('dashboard.html', user=PLACEHOLDER_USER)
 
 @app.route('/pricing')
 def pricing():
@@ -55,15 +62,33 @@ def features():
 
 @app.route('/scrape')
 def scrape():
-    return render_template('scrape.html')
+    """Email scraping page - matches template expectation"""
+    return render_template('scrape.html', user=PLACEHOLDER_USER)
+
+@app.route('/scrape_page')
+def scrape_page():
+    """Alias for scrape route to fix template errors"""
+    return render_template('scrape.html', user=PLACEHOLDER_USER)
 
 @app.route('/campaigns')
 def campaigns():
-    return render_template('campaigns.html')
+    """Campaigns page - matches template expectation"""
+    return render_template('campaigns.html', user=PLACEHOLDER_USER)
+
+@app.route('/campaigns_page')
+def campaigns_page():
+    """Alias for campaigns route to fix template errors"""
+    return render_template('campaigns.html', user=PLACEHOLDER_USER)
 
 @app.route('/subscription')
 def subscription():
-    return render_template('subscription.html')
+    """Subscription page - matches template expectation"""
+    return render_template('subscription.html', user=PLACEHOLDER_USER)
+
+@app.route('/subscription_page')
+def subscription_page():
+    """Alias for subscription route to fix template errors"""
+    return render_template('subscription.html', user=PLACEHOLDER_USER)
 
 @app.route('/terms')
 def terms():
