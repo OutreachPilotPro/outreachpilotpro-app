@@ -173,6 +173,27 @@ email_finder = EmailFinder()
 def home():
     return render_template("index.html")
 
+# Route aliases for templates
+@app.route("/home")
+def home_alias():
+    return redirect(url_for('home'))
+
+@app.route("/scrape-page")
+def scrape_page_alias():
+    return redirect(url_for('scrape_page'))
+
+@app.route("/campaigns-page")
+def campaigns_page_alias():
+    return redirect(url_for('campaigns_page'))
+
+@app.route("/subscription-page")
+def subscription_page_alias():
+    return redirect(url_for('subscription_page'))
+
+@app.route("/new-campaign")
+def new_campaign_alias():
+    return redirect(url_for('new_campaign'))
+
 @app.route("/live-demo")
 def live_demo():
     """Live demo page for email finding"""
