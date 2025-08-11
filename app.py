@@ -69,9 +69,8 @@ except Exception as e:
 try:
     subscription_mgr = subscription_manager.SubscriptionManager()
     email_sender = bulk_email_sender.BulkEmailSender()
-    # Temporarily disable infinite_email_db to prevent database locking
-    # infinite_email_db = email_database.InfiniteEmailDatabase()
-    infinite_email_db = None
+    # Re-enable the InfiniteEmailDatabase; WAL mode in the DB connection should handle locking.
+    infinite_email_db = email_database.InfiniteEmailDatabase()
 except Exception as e:
     print(f"Warning: Could not initialize managers: {e}")
     subscription_mgr = None
@@ -169,7 +168,7 @@ except Exception as e:
 # Initialize consolidated email finder service
 email_finder = EmailFinder()
 
-@app.route("/", endpoint='home')
+@app.route("/", endpoint='index')
 def home():
     return render_template("index.html")
 
@@ -185,12 +184,12 @@ def about():
     """About page"""
     return render_template("about.html")
 
-@app.route("/blog")
+@app.route("/blog", endpoint='blog')
 def blog():
     """Blog page"""
     return render_template("blog.html")
 
-@app.route("/careers")
+@app.route("/careers", endpoint='careers')
 def careers():
     """Careers page"""
     return render_template("careers.html")
@@ -200,12 +199,12 @@ def contact():
     """Contact page"""
     return render_template("contact.html")
 
-@app.route("/api")
+@app.route("/api", endpoint='api_docs')
 def api_docs():
     """API documentation page"""
     return render_template("api.html")
 
-@app.route("/integrations")
+@app.route("/integrations", endpoint='integrations')
 def integrations():
     """Integrations page"""
     return render_template("integrations.html")
@@ -220,17 +219,17 @@ def pricing():
     """Pricing page"""
     return render_template("pricing.html")
 
-@app.route("/gdpr")
+@app.route("/gdpr", endpoint='gdpr')
 def gdpr():
     """GDPR compliance page"""
     return render_template("gdpr.html")
 
-@app.route("/anti-spam")
+@app.route("/anti-spam", endpoint='anti_spam')
 def anti_spam():
     """Anti-spam policy page"""
     return render_template("anti_spam.html")
 
-@app.route("/login", methods=['GET', 'POST'])
+@app.route("/login", methods=['GET', 'POST'], endpoint='login')
 def login():
     if 'user' in session:
         return redirect(url_for('dashboard'))
@@ -294,7 +293,7 @@ def login():
     
     return render_template("login.html")
 
-@app.route("/signup", methods=['GET', 'POST'])
+@app.route("/signup", methods=['GET', 'POST'], endpoint='signup')
 def signup():
     if 'user' in session:
         return redirect(url_for('dashboard'))
@@ -337,13 +336,13 @@ def signup():
     
     return render_template("signup.html")
 
-@app.route("/login/google")
+@app.route("/login/google", endpoint='google_login')
 def google_login():
     """Google OAuth login"""
     redirect_uri = url_for('google_authorize', _external=True)
     return oauth.google.authorize_redirect(redirect_uri)
 
-@app.route("/login/google/authorize")
+@app.route("/login/google/authorize", endpoint='google_authorize')
 def google_authorize():
     """Google OAuth callback"""
     try:
@@ -363,13 +362,13 @@ def google_authorize():
         flash('Google login failed. Please try again.', 'error')
         return redirect(url_for('login'))
 
-@app.route("/logout")
+@app.route("/logout", endpoint='logout')
 def logout():
     """Logout user"""
     session.pop('user', None)
     return redirect(url_for('home'))
 
-@app.route("/dashboard")
+@app.route("/dashboard", endpoint='dashboard')
 def dashboard():
     """User dashboard"""
     if 'user' not in session:
@@ -418,21 +417,21 @@ def dashboard():
                          recent_emails=recent_emails)
 
 @app.route("/scrape", endpoint='scrape_page')
-def scrape():
+def scrape_page():
     """Email scraping page"""
     if 'user' not in session:
         return redirect(url_for('login'))
     return render_template("scrape.html")
 
 @app.route("/scrape-enhanced", endpoint='scrape_enhanced_page')
-def scrape_enhanced():
+def scrape_enhanced_page():
     """Enhanced email scraping page"""
     if 'user' not in session:
         return redirect(url_for('login'))
     return render_template("scrape_enhanced.html")
 
 @app.route("/campaigns", endpoint='campaigns_page')
-def campaigns():
+def campaigns_page():
     """Campaigns management page"""
     if 'user' not in session:
         return redirect(url_for('login'))
@@ -449,7 +448,7 @@ def campaigns():
     return render_template("campaigns.html", campaigns=campaigns)
 
 @app.route("/campaigns/new", methods=['GET', 'POST'], endpoint='new_campaign')
-def create_new_campaign():
+def new_campaign():
     """Create new campaign"""
     if 'user' not in session:
         return redirect(url_for('login'))
@@ -473,7 +472,7 @@ def create_new_campaign():
         # Update email usage
         email_count = len([e for e in emails.split('\n') if e.strip()])
         c.execute("INSERT OR REPLACE INTO email_usage (user_id, emails_found, date) VALUES (?, ?, DATE('now'))", 
-                 (user_id, email_count))
+                 (email_count, user_id))
         
         conn.commit()
         conn.close()
@@ -483,7 +482,7 @@ def create_new_campaign():
     
     return render_template("new_campaign.html")
 
-@app.route("/campaigns/<int:campaign_id>/send", methods=['POST'])
+@app.route("/campaigns/<int:campaign_id>/send", methods=['POST'], endpoint='send_campaign')
 def send_campaign(campaign_id):
     """Send campaign emails"""
     if 'user' not in session:
@@ -522,7 +521,7 @@ def send_campaign(campaign_id):
     return jsonify({'success': True, 'emails_sent': len(email_list)})
 
 @app.route("/subscription", endpoint='subscription_page')
-def subscription():
+def subscription_page():
     """Subscription management page"""
     if 'user' not in session:
         return redirect(url_for('login'))
@@ -550,7 +549,7 @@ def subscription():
                          plans=plans,
                          stripe_public_key=app.config.get('STRIPE_PUBLISHABLE_KEY'))
 
-@app.route("/subscription/upgrade/<plan_id>")
+@app.route("/subscription/upgrade/<plan_id>", endpoint='upgrade_subscription')
 def upgrade_subscription(plan_id):
     """Upgrade subscription page"""
     if 'user' not in session:
@@ -569,7 +568,7 @@ def upgrade_subscription(plan_id):
     plan = plans[plan_id]
     return render_template("subscription_upgrade.html", plan=plan)
 
-@app.route("/subscription/create-checkout-session", methods=['POST'])
+@app.route("/subscription/create-checkout-session", methods=['POST'], endpoint='create_checkout_session')
 def create_checkout_session():
     """Create Stripe checkout session"""
     if 'user' not in session:
@@ -615,7 +614,7 @@ def create_checkout_session():
         print(f"Error creating checkout session: {e}")
         return jsonify({'error': 'Error creating checkout session'}), 500
 
-@app.route("/subscription/success")
+@app.route("/subscription/success", endpoint='subscription_success')
 def subscription_success():
     """Subscription success page"""
     if 'user' not in session:
@@ -623,7 +622,7 @@ def subscription_success():
     
     return render_template("subscription_success.html")
 
-@app.route("/subscription/cancel", methods=['POST'])
+@app.route("/subscription/cancel", methods=['POST'], endpoint='cancel_subscription')
 def cancel_subscription():
     """Cancel subscription"""
     if 'user' not in session:
@@ -669,7 +668,7 @@ def privacy():
     """Privacy policy page"""
     return render_template("privacy.html")
 
-@app.route("/webhook/stripe", methods=['POST'])
+@app.route("/webhook/stripe", methods=['POST'], endpoint='stripe_webhook')
 def stripe_webhook():
     """Stripe webhook handler"""
     payload = request.get_data()
@@ -707,7 +706,7 @@ def stripe_webhook():
     
     return 'Success', 200
 
-@app.route("/api/usage")
+@app.route("/api/usage", endpoint='api_usage')
 def api_usage():
     """Get user usage statistics"""
     if 'user' not in session:
@@ -738,7 +737,7 @@ def api_usage():
         'total': {'found': total_usage[0], 'sent': total_usage[1]}
     })
 
-@app.route("/api/search/infinite", methods=['POST'])
+@app.route("/api/search/infinite", methods=['POST'], endpoint='search_infinite_emails')
 def search_infinite_emails():
     """Infinite email search API"""
     if 'user' not in session:
@@ -775,7 +774,7 @@ def search_infinite_emails():
         print(f"Error in infinite search: {e}")
         return jsonify({'error': 'Search failed'}), 500
 
-@app.route("/api/search/advanced", methods=['POST'])
+@app.route("/api/search/advanced", methods=['POST'], endpoint='advanced_search')
 def advanced_search():
     """Advanced email search API"""
     if 'user' not in session:
@@ -836,7 +835,7 @@ def advanced_search():
         print(f"Error in advanced search: {e}")
         return jsonify({'error': 'Search failed'}), 500
 
-@app.route("/api/search/universal", methods=['POST'])
+@app.route("/api/search/universal", methods=['POST'], endpoint='universal_search')
 def universal_search():
     """Universal email search API"""
     if 'user' not in session:
@@ -873,7 +872,7 @@ def universal_search():
         print(f"Error in universal search: {e}")
         return jsonify({'error': 'Search failed'}), 500
 
-@app.route("/api/scrape-website", methods=['POST'])
+@app.route("/api/scrape-website", methods=['POST'], endpoint='scrape_website')
 def scrape_website():
     """Scrape emails from a specific website"""
     if 'user' not in session:
@@ -909,7 +908,7 @@ def scrape_website():
         print(f"Error scraping website: {e}")
         return jsonify({'error': 'Scraping failed'}), 500
 
-@app.route("/api/export-emails", methods=['POST'])
+@app.route("/api/export-emails", methods=['POST'], endpoint='export_emails')
 def export_emails():
     """Export emails to CSV"""
     if 'user' not in session:
@@ -947,7 +946,7 @@ def export_emails():
         print(f"Error exporting emails: {e}")
         return jsonify({'error': 'Export failed'}), 500
 
-@app.route("/api/health")
+@app.route("/api/health", endpoint='api_health')
 def health_check():
     """Health check endpoint"""
     return jsonify({
@@ -956,7 +955,7 @@ def health_check():
         'version': '2.0.0'
     })
 
-@app.route("/api/email-search", methods=['POST'])
+@app.route("/api/email-search", methods=['POST'], endpoint='email_search')
 def email_search():
     """Search for emails based on query and filters"""
     if 'user' not in session:
@@ -1007,7 +1006,7 @@ def email_search():
         print(f"Error in email search: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route("/api/campaigns/create", methods=['POST'])
+@app.route("/api/campaigns/create", methods=['POST'], endpoint='create_campaign')
 def create_campaign():
     """Create a new email campaign"""
     if 'user' not in session:
@@ -1059,7 +1058,7 @@ def create_campaign():
         print(f"Error creating campaign: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route("/api/campaigns/<int:campaign_id>/start", methods=['POST'])
+@app.route("/api/campaigns/<int:campaign_id>/start", methods=['POST'], endpoint='start_campaign')
 def start_campaign(campaign_id):
     """Start a campaign"""
     if 'user' not in session:
@@ -1091,7 +1090,7 @@ def start_campaign(campaign_id):
         print(f"Error starting campaign: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route("/api/campaigns/<int:campaign_id>/pause", methods=['POST'])
+@app.route("/api/campaigns/<int:campaign_id>/pause", methods=['POST'], endpoint='pause_campaign')
 def pause_campaign(campaign_id):
     """Pause a campaign"""
     if 'user' not in session:
@@ -1122,7 +1121,7 @@ def pause_campaign(campaign_id):
         print(f"Error pausing campaign: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route("/api/campaigns/<int:campaign_id>/resume", methods=['POST'])
+@app.route("/api/campaigns/<int:campaign_id>/resume", methods=['POST'], endpoint='resume_campaign')
 def resume_campaign(campaign_id):
     """Resume a campaign"""
     if 'user' not in session:
@@ -1153,7 +1152,7 @@ def resume_campaign(campaign_id):
         print(f"Error resuming campaign: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route("/api/campaigns/<int:campaign_id>", methods=['DELETE'])
+@app.route("/api/campaigns/<int:campaign_id>", methods=['DELETE'], endpoint='delete_campaign')
 def delete_campaign(campaign_id):
     """Delete a campaign"""
     if 'user' not in session:
