@@ -33,7 +33,9 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
 app = Flask(__name__)
+print("🔧 Loading configuration...")
 app.config.from_object(Config)
+print("✅ Configuration loaded successfully")
 
 # Production security settings
 if app.config['FLASK_ENV'] == 'production':
@@ -65,16 +67,29 @@ try:
 except Exception as e:
     print(f"Warning: Could not initialize OAuth: {e}")
 
-# Initialize managers
+# Initialize managers with better error handling
+subscription_mgr = None
+email_sender = None
+infinite_email_db = None
+
 try:
     subscription_mgr = subscription_manager.SubscriptionManager()
-    email_sender = bulk_email_sender.BulkEmailSender()
-    # Re-enable the InfiniteEmailDatabase; WAL mode in the DB connection should handle locking.
-    infinite_email_db = email_database.InfiniteEmailDatabase()
+    print("✅ Subscription manager initialized")
 except Exception as e:
-    print(f"Warning: Could not initialize managers: {e}")
-    subscription_mgr = None
-    email_sender = None
+    print(f"Warning: Could not initialize subscription manager: {e}")
+
+try:
+    email_sender = bulk_email_sender.BulkEmailSender()
+    print("✅ Email sender initialized")
+except Exception as e:
+    print(f"Warning: Could not initialize email sender: {e}")
+
+try:
+    # Initialize email database with timeout protection
+    infinite_email_db = email_database.InfiniteEmailDatabase()
+    print("✅ Infinite email database initialized")
+except Exception as e:
+    print(f"Warning: Could not initialize infinite email database: {e}")
     infinite_email_db = None
 
 # Enhanced database connection with better error handling
@@ -1237,5 +1252,6 @@ def internal_error(error):
     return render_template('500.html'), 500
 
 if __name__ == '__main__':
+    print("🚀 Starting OutreachPilotPro application...")
     app.run(debug=True)
 
