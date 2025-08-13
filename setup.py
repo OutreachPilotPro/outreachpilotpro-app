@@ -6,9 +6,14 @@ Initializes database and installs dependencies
 
 import os
 import sys
-import sqlite3
+import psycopg2
+from psycopg2.extras import DictCursor
 import subprocess
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 def install_dependencies():
     """Install Python dependencies"""
@@ -29,36 +34,74 @@ def create_database():
     from subscription_manager import create_subscription_tables
     from services.email_finder import EmailFinder
     
-    conn = sqlite3.connect("outreachpilot.db")
-    c = conn.cursor()
+    # Get DATABASE_URL from environment
+    database_url = os.getenv('DATABASE_URL')
+    if not database_url:
+        print("❌ DATABASE_URL not found in environment variables")
+        return False
+    
+    try:
+        conn = psycopg2.connect(database_url)
+        conn.cursor_factory = DictCursor
+        c = conn.cursor()
+    except Exception as e:
+        print(f"❌ Error connecting to database: {e}")
+        return False
     
     try:
         # Create users table
         c.execute("""
             CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email TEXT UNIQUE NOT NULL,
-                name TEXT,
-                google_id TEXT UNIQUE,
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                name VARCHAR(255),
+                google_id VARCHAR(255) UNIQUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         
-        # Create subscription tables
+        # Create campaigns table first (needed by other tables)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS campaigns (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                subject VARCHAR(255) NOT NULL,
+                body TEXT NOT NULL,
+                from_name VARCHAR(255),
+                reply_to VARCHAR(255),
+                recipient_list_id INTEGER,
+                scheduled_time TIMESTAMP,
+                status VARCHAR(50) DEFAULT 'draft',
+                started_at TIMESTAMP,
+                completed_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        """)
+        print("✅ Created campaigns table")
+        
+        # Create subscription tables (execute each statement separately)
         tables_sql = create_subscription_tables()
-        for statement in tables_sql.split(';'):
-            if statement.strip():
+        statements = [stmt.strip() for stmt in tables_sql.split(';') if stmt.strip()]
+        
+        for statement in statements:
+            try:
                 c.execute(statement)
+                print(f"✅ Executed: {statement[:50]}...")
+            except Exception as e:
+                print(f"⚠️  Warning executing statement: {e}")
+                print(f"Statement: {statement[:100]}...")
         
         # Create scraped_emails table
         c.execute("""
             CREATE TABLE IF NOT EXISTS scraped_emails (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 user_id INTEGER NOT NULL,
-                company_name TEXT NOT NULL,
-                email TEXT NOT NULL,
-                source TEXT DEFAULT 'manual',
-                verified BOOLEAN DEFAULT 1,
+                company_name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                source VARCHAR(100) DEFAULT 'manual',
+                verified BOOLEAN DEFAULT TRUE,
                 scraped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users (id)
             )
@@ -67,16 +110,16 @@ def create_database():
         # Create campaigns table
         c.execute("""
             CREATE TABLE IF NOT EXISTS campaigns (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 user_id INTEGER NOT NULL,
-                name TEXT NOT NULL,
-                subject TEXT NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                subject VARCHAR(255) NOT NULL,
                 body TEXT NOT NULL,
-                from_name TEXT,
-                reply_to TEXT,
+                from_name VARCHAR(255),
+                reply_to VARCHAR(255),
                 recipient_list_id INTEGER,
                 scheduled_time TIMESTAMP,
-                status TEXT DEFAULT 'draft',
+                status VARCHAR(50) DEFAULT 'draft',
                 started_at TIMESTAMP,
                 completed_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -87,10 +130,10 @@ def create_database():
         # Create email_queue table
         c.execute("""
             CREATE TABLE IF NOT EXISTS email_queue (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 campaign_id INTEGER NOT NULL,
-                recipient_email TEXT NOT NULL,
-                status TEXT DEFAULT 'pending',
+                recipient_email VARCHAR(255) NOT NULL,
+                status VARCHAR(50) DEFAULT 'pending',
                 scheduled_for TIMESTAMP,
                 sent_at TIMESTAMP,
                 opened_at TIMESTAMP,
@@ -105,7 +148,7 @@ def create_database():
         # Create google_tokens table
         c.execute("""
             CREATE TABLE IF NOT EXISTS google_tokens (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 user_id INTEGER NOT NULL,
                 access_token TEXT NOT NULL,
                 refresh_token TEXT,
@@ -143,7 +186,7 @@ SECRET_KEY=your-secret-key-here-change-this-in-production
 FLASK_ENV=development
 
 # Database Configuration
-DATABASE_URL=sqlite:///outreachpilot.db
+DATABASE_URL=postgresql://username:password@localhost:5432/outreachpilot
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID=your-google-client-id

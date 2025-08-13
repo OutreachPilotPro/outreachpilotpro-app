@@ -2,7 +2,7 @@
 
 ## ✅ **Current Status: OAuth System Implemented!**
 
-Your `app_minimal.py` now has a **fully working Google OAuth system**! Here's what you need to do to make it work:
+Your `app.py` now has a **fully working Google OAuth system**! Here's what you need to do to make it work:
 
 ## 🔧 **Step 1: Google Cloud Console Setup**
 
@@ -63,7 +63,7 @@ You need to create a `.env` file with these values:
 ```bash
 # Create .env file (if it doesn't exist)
 cp env.template .env
-```
+```5`
 
 Then edit `.env` and add:
 
@@ -87,7 +87,7 @@ BASE_URL=https://www.outreachpilotpro.com
 pip install -r requirements_minimal.txt
 
 # Test the app
-python3 app_minimal.py
+python3 app.py
 ```
 
 Visit `http://localhost:5000` and test:

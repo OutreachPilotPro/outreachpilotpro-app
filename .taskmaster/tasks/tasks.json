@@ -1,118 +1,169 @@
 {
-  "project": "OutreachPilotPro - The B2B Marketing Revolution",
-  "version": "2.0.0",
-  "created": "2024-12-19T00:00:00Z",
-  "vision": "To fundamentally reshape B2B marketing by becoming the indispensable tool for every successful business. Our name should be the verb for effective digital outreach.",
-  "tasks": [
-    {
-      "id": "1",
-      "title": "Revolutionary Email Discovery Engine",
-      "description": "Build the Web as Your Database - Go beyond simple scraping to intelligently map entire business ecosystems",
-      "details": "Create an intelligent discovery engine that doesn't just find emails, but discovers opportunities. Must map entire industry verticals, identify key personnel with unprecedented accuracy, and build high-quality prospect lists in minutes, not weeks. This is the foundation of our 'Growth Outreach' category creation.",
-      "status": "pending",
-      "priority": "critical",
-      "dependencies": [],
-      "testStrategy": "Test with various industry verticals, measure discovery accuracy, validate prospect quality, and benchmark against manual research time",
-      "subtasks": []
-    },
-    {
-      "id": "2",
-      "title": "Military-Grade Email Verification System",
-      "description": "Build compliance and deliverability as core pillars, not afterthoughts",
-      "details": "Implement a 'white-hat' verification system that protects brand reputation while allowing aggressive scaling. Must handle spam trap detection, regulatory compliance, and deliverability optimization. This is what separates us from competitors who treat compliance as a checkbox.",
-      "status": "pending",
-      "priority": "critical",
-      "dependencies": ["1"],
-      "testStrategy": "Test with various email providers, measure deliverability rates, validate compliance across jurisdictions, and stress-test with high-volume scenarios",
-      "subtasks": []
-    },
-    {
-      "id": "3",
-      "title": "Mass Communication Powerhouse",
-      "description": "Handle 100 to 500,000+ emails per month with flawless execution",
-      "details": "Build a campaign automation system that feels as simple for 100 emails as it does for half a million. Must handle multi-stage campaigns, personalization at scale, and eliminate technical bottlenecks. This is the engine that makes every user feel like they have a world-class marketing department.",
-      "status": "pending",
-      "priority": "critical",
-      "dependencies": ["1", "2"],
-      "testStrategy": "Test with various campaign sizes, measure execution speed, validate personalization accuracy, and stress-test with enterprise-scale volumes",
-      "subtasks": []
-    },
-    {
-      "id": "4",
-      "title": "Strategic Intelligence Dashboard",
-      "description": "Create the Mission Control for Growth - More than metrics, a strategic command center",
-      "details": "Build an analytics platform that provides clear, actionable insights into what drives responses, clicks, and revenue. Must be more than a set of metrics - it should be a strategic command center that guides growth decisions. This is what turns users into evangelists.",
-      "status": "pending",
-      "priority": "high",
-      "dependencies": ["3"],
-      "testStrategy": "Test with various user personas, measure insight clarity, validate actionability of recommendations, and benchmark against decision-making speed",
-      "subtasks": []
-    },
-    {
-      "id": "5",
-      "title": "Revolutionary User Experience",
-      "description": "Simplicity as the Ultimate Sophistication - Hide immense power behind clean interfaces",
-      "details": "Create an intuitive user experience that makes world-class marketing accessible to everyone, not just experts. The interface must be so clean and simple that users forget they're using a powerful platform. This is our most revolutionary feature - democratizing sophisticated marketing.",
-      "status": "pending",
-      "priority": "high",
-      "dependencies": ["4"],
-      "testStrategy": "Test with various user skill levels, measure time-to-value, validate ease of use, and conduct usability studies across different business sizes",
-      "subtasks": []
-    },
-    {
-      "id": "6",
-      "title": "Enterprise-Grade Infrastructure",
-      "description": "Build the foundation for market dominance and explosive growth",
-      "details": "Create infrastructure that can handle the scale of market dominance. Must support enterprise-grade reliability, security, and performance while maintaining the simplicity that makes us revolutionary. This is what enables our explosive, evangelist-led growth.",
-      "status": "pending",
-      "priority": "high",
-      "dependencies": ["5"],
-      "testStrategy": "Test with various load scenarios, measure performance under stress, validate security compliance, and benchmark against enterprise requirements",
-      "subtasks": []
-    },
-    {
-      "id": "7",
-      "title": "Market Disruption Strategy",
-      "description": "Position OutreachPilotPro as the new category creator in 'Growth Outreach'",
-      "details": "Develop marketing and positioning that establishes us as the new category of 'Growth Outreach.' Must communicate our revolutionary difference and create evangelists who become our most powerful sales force. This is about creating a movement, not just acquiring customers.",
-      "status": "pending",
-      "priority": "medium",
-      "dependencies": ["6"],
-      "testStrategy": "Test messaging effectiveness, measure evangelist creation, validate category positioning, and benchmark against market disruption metrics",
-      "subtasks": []
-    },
-    {
-      "id": "8",
-      "title": "Revenue Model Optimization",
-      "description": "Create pricing that democratizes enterprise-grade power",
-      "details": "Design pricing that makes enterprise-grade power accessible to businesses of all sizes. Must provide half a million emails per month for a fraction of competitor costs while maintaining profitability. This is what gives superpowers to businesses of all sizes.",
-      "status": "pending",
-      "priority": "medium",
-      "dependencies": ["7"],
-      "testStrategy": "Test pricing elasticity, measure conversion rates, validate profitability models, and benchmark against market positioning",
-      "subtasks": []
-    },
-    {
-      "id": "9",
-      "title": "Customer Success & Evangelism",
-      "description": "Turn customers into our most powerful sales force",
-      "description": "Build a customer success program that creates evangelists who become our most powerful sales force. Must deliver ROI so clear that customers naturally promote us. This is about fostering explosive, evangelist-led growth.",
-      "status": "pending",
-      "priority": "medium",
-      "dependencies": ["8"],
-      "testStrategy": "Test success program effectiveness, measure evangelist creation, validate ROI delivery, and benchmark against customer advocacy metrics",
-      "subtasks": []
-    },
-    {
-      "id": "10",
-      "title": "Market Launch & Category Domination",
-      "description": "Execute the launch that establishes market dominance",
-      "details": "Execute a launch strategy that establishes us as the dominant player in the new 'Growth Outreach' category. Must create market momentum that renders previous solutions obsolete. This is about achieving the visionary goal of fundamentally reshaping B2B marketing.",
-      "status": "pending",
-      "priority": "medium",
-      "dependencies": ["9"],
-      "testStrategy": "Test launch effectiveness, measure market penetration, validate category dominance, and benchmark against market disruption goals",
-      "subtasks": []
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Revolutionary Email Discovery Engine",
+        "description": "Build the Web as Your Database - Go beyond simple scraping to intelligently map entire business ecosystems",
+        "details": "Create an intelligent discovery engine that doesn't just find emails, but discovers opportunities. Must map entire industry verticals, identify key personnel with unprecedented accuracy, and build high-quality prospect lists in minutes, not weeks. This is the foundation of our 'Growth Outreach' category creation.",
+        "status": "pending",
+        "priority": "critical",
+        "dependencies": [],
+        "testStrategy": "Test with various industry verticals, measure discovery accuracy, validate prospect quality, and benchmark against manual research time",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Web Scraping Infrastructure",
+            "description": "Build the foundational web scraping system that can intelligently crawl websites and extract business information",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 1
+          },
+          {
+            "id": 2,
+            "title": "Business Intelligence Engine",
+            "description": "Develop AI-powered algorithms to identify and map business relationships, industry verticals, and key personnel",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 1
+          },
+          {
+            "id": 3,
+            "title": "Email Discovery & Validation",
+            "description": "Implement intelligent email finding algorithms with built-in validation and quality scoring",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 1
+          },
+          {
+            "id": 4,
+            "title": "Advanced Analytics Dashboard",
+            "description": "Create comprehensive reporting and analytics interface for campaign performance and data insights",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 1
+          },
+          {
+            "id": 5,
+            "title": "Campaign Management & Automation",
+            "description": "Build intelligent campaign orchestration with automated follow-ups and A/B testing capabilities",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 1
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Military-Grade Email Verification System",
+        "description": "Build compliance and deliverability as core pillars, not afterthoughts",
+        "details": "Implement a 'white-hat' verification system that protects brand reputation while allowing aggressive scaling. Must handle spam trap detection, regulatory compliance, and deliverability optimization. This is what separates us from competitors who treat compliance as a checkbox.",
+        "status": "pending",
+        "priority": "critical",
+        "dependencies": ["1"],
+        "testStrategy": "Test with various email providers, measure deliverability rates, validate compliance across jurisdictions, and stress-test with high-volume scenarios",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Mass Communication Powerhouse",
+        "description": "Handle 100 to 500,000+ emails per month with flawless execution",
+        "details": "Build a campaign automation system that feels as simple for 100 emails as it does for half a million. Must handle multi-stage campaigns, personalization at scale, and eliminate technical bottlenecks. This is the engine that makes every user feel like they have a world-class marketing department.",
+        "status": "pending",
+        "priority": "critical",
+        "dependencies": ["1", "2"],
+        "testStrategy": "Test with various campaign sizes, measure execution speed, validate personalization accuracy, and stress-test with enterprise-scale volumes",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Strategic Intelligence Dashboard",
+        "description": "Create the Mission Control for Growth - More than metrics, a strategic command center",
+        "details": "Build an analytics platform that provides clear, actionable insights into what drives responses, clicks, and revenue. Must be more than a set of metrics - it should be a strategic command center that guides growth decisions. This is what turns users into evangelists.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": ["3"],
+        "testStrategy": "Test with various user personas, measure insight clarity, validate actionability of recommendations, and benchmark against decision-making speed",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Revolutionary User Experience",
+        "description": "Simplicity as the Ultimate Sophistication - Hide immense power behind clean interfaces",
+        "details": "Create an intuitive user experience that makes world-class marketing accessible to everyone, not just experts. The interface must be so clean and simple that users forget they're using a powerful platform. This is our most revolutionary feature - democratizing sophisticated marketing.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": ["4"],
+        "testStrategy": "Test with various user skill levels, measure time-to-value, validate ease of use, and conduct usability studies across different business sizes",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Enterprise-Grade Infrastructure",
+        "description": "Build the foundation for market dominance and explosive growth",
+        "details": "Create infrastructure that can handle the scale of market dominance. Must support enterprise-grade reliability, security, and performance while maintaining the simplicity that makes us revolutionary. This is what enables our explosive, evangelist-led growth.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": ["5"],
+        "testStrategy": "Test with various load scenarios, measure performance under stress, validate security compliance, and benchmark against enterprise requirements",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Market Disruption Strategy",
+        "description": "Position OutreachPilotPro as the new category creator in 'Growth Outreach'",
+        "details": "Develop marketing and positioning that establishes us as the new category of 'Growth Outreach.' Must communicate our revolutionary difference and create evangelists who become our most powerful sales force. This is about creating a movement, not just acquiring customers.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": ["6"],
+        "testStrategy": "Test messaging effectiveness, measure evangelist creation, validate category positioning, and benchmark against market disruption metrics",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Revenue Model Optimization",
+        "description": "Create pricing that democratizes enterprise-grade power",
+        "details": "Design pricing that makes enterprise-grade power accessible to businesses of all sizes. Must provide half a million emails per month for a fraction of competitor costs while maintaining profitability. This is what gives superpowers to businesses of all sizes.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": ["7"],
+        "testStrategy": "Test pricing elasticity, measure conversion rates, validate profitability models, and benchmark against market positioning",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Customer Success & Evangelism",
+        "description": "Turn customers into our most powerful sales force",
+        "details": "Build a customer success program that creates evangelists who become our most powerful sales force. Must deliver ROI so clear that customers naturally promote us. This is about fostering explosive, evangelist-led growth.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": ["8"],
+        "testStrategy": "Test success program effectiveness, measure evangelist creation, validate ROI delivery, and benchmark against customer advocacy metrics",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Market Launch & Category Domination",
+        "description": "Execute the launch that establishes market dominance",
+        "details": "Execute a launch strategy that establishes us as the dominant player in the new 'Growth Outreach' category. Must create market momentum that renders previous solutions obsolete. This is about achieving the visionary goal of fundamentally reshaping B2B marketing.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": ["9"],
+        "testStrategy": "Test launch effectiveness, measure market penetration, validate category dominance, and benchmark against market disruption goals",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2024-12-19T00:00:00Z",
+      "updated": "2024-12-19T00:00:00Z",
+      "description": "OutreachPilotPro - The B2B Marketing Revolution",
+      "version": "2.0.0",
+      "vision": "To fundamentally reshape B2B marketing by becoming the indispensable tool for every successful business. Our name should be the verb for effective digital outreach."
     }
-  ]
+  }
 }

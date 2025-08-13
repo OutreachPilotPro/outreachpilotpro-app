@@ -91,15 +91,15 @@ def create_subscription_tables():
     return """
     -- User subscriptions
     CREATE TABLE IF NOT EXISTS subscriptions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
-        tier TEXT NOT NULL DEFAULT 'free',
-        stripe_customer_id TEXT,
-        stripe_subscription_id TEXT,
-        status TEXT DEFAULT 'active', -- active, cancelled, past_due, trialing
+        tier VARCHAR(50) NOT NULL DEFAULT 'free',
+        stripe_customer_id VARCHAR(255),
+        stripe_subscription_id VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'active', -- active, cancelled, past_due, trialing
         current_period_start TIMESTAMP,
         current_period_end TIMESTAMP,
-        cancel_at_period_end BOOLEAN DEFAULT 0,
+        cancel_at_period_end BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users (id)
@@ -107,9 +107,9 @@ def create_subscription_tables():
 
     -- Usage tracking
     CREATE TABLE IF NOT EXISTS usage_tracking (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
-        month TEXT NOT NULL, -- YYYY-MM format
+        month VARCHAR(7) NOT NULL, -- YYYY-MM format
         emails_sent INTEGER DEFAULT 0,
         emails_scraped INTEGER DEFAULT 0,
         campaigns_created INTEGER DEFAULT 0,
@@ -120,12 +120,12 @@ def create_subscription_tables():
 
     -- Payment history
     CREATE TABLE IF NOT EXISTS payment_history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
-        stripe_payment_intent_id TEXT,
+        stripe_payment_intent_id VARCHAR(255),
         amount INTEGER NOT NULL, -- in cents
-        currency TEXT DEFAULT 'usd',
-        status TEXT NOT NULL,
+        currency VARCHAR(3) DEFAULT 'usd',
+        status VARCHAR(50) NOT NULL,
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users (id)
@@ -133,10 +133,10 @@ def create_subscription_tables():
 
     -- Email sending queue
     CREATE TABLE IF NOT EXISTS email_queue (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         campaign_id INTEGER NOT NULL,
-        recipient_email TEXT NOT NULL,
-        status TEXT DEFAULT 'pending', -- pending, sending, sent, failed, bounced
+        recipient_email VARCHAR(255) NOT NULL,
+        status VARCHAR(50) DEFAULT 'pending', -- pending, sending, sent, failed, bounced
         scheduled_for TIMESTAMP,
         sent_at TIMESTAMP,
         opened_at TIMESTAMP,
@@ -149,16 +149,16 @@ def create_subscription_tables():
 
     -- Campaigns table
     CREATE TABLE IF NOT EXISTS campaigns (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        subject TEXT NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        subject VARCHAR(255) NOT NULL,
         body TEXT NOT NULL,
-        from_name TEXT,
-        reply_to TEXT,
+        from_name VARCHAR(255),
+        reply_to VARCHAR(255),
         recipient_list_id INTEGER,
         scheduled_time TIMESTAMP,
-        status TEXT DEFAULT 'draft', -- draft, scheduled, sending, completed, paused
+        status VARCHAR(50) DEFAULT 'draft', -- draft, scheduled, sending, completed, paused
         started_at TIMESTAMP,
         completed_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -167,7 +167,7 @@ def create_subscription_tables():
 
     -- Google OAuth tokens
     CREATE TABLE IF NOT EXISTS google_tokens (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
         access_token TEXT NOT NULL,
         refresh_token TEXT,

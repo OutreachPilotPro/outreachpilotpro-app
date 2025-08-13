@@ -6,7 +6,8 @@ Single source of truth combining the best features from all app variants
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from config import Config
-import sqlite3
+import psycopg2
+from psycopg2.extras import DictCursor
 import os
 from datetime import datetime
 import json
@@ -94,11 +95,13 @@ except Exception as e:
 
 # Enhanced database connection with better error handling
 def get_db_connection():
-    conn = sqlite3.connect("outreachpilot.db", timeout=30.0)
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA synchronous=NORMAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    return conn
+    try:
+        conn = psycopg2.connect(app.config['DATABASE_URL'])
+        conn.cursor_factory = DictCursor
+        return conn
+    except Exception as e:
+        print(f"FATAL: Database connection failed: {e}")
+        raise
 
 # Enhanced database initialization
 def init_enhanced_database():
@@ -108,24 +111,24 @@ def init_enhanced_database():
     # Create enhanced users table
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            name TEXT NOT NULL,
+            id SERIAL PRIMARY KEY,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            name VARCHAR(255) NOT NULL,
             password_hash TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP,
-            subscription_status TEXT DEFAULT 'free'
+            subscription_status VARCHAR(50) DEFAULT 'free'
         )
     ''')
     
     # Create enhanced subscriptions table
     c.execute('''
         CREATE TABLE IF NOT EXISTS subscriptions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
-            plan_id TEXT NOT NULL,
-            status TEXT DEFAULT 'active',
-            stripe_subscription_id TEXT,
+            plan_id VARCHAR(100) NOT NULL,
+            status VARCHAR(50) DEFAULT 'active',
+            stripe_subscription_id VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             expires_at TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
@@ -135,15 +138,15 @@ def init_enhanced_database():
     # Create enhanced campaigns table
     c.execute('''
         CREATE TABLE IF NOT EXISTS campaigns (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
-            name TEXT NOT NULL,
+            name VARCHAR(255) NOT NULL,
             emails TEXT,
-            status TEXT DEFAULT 'draft',
+            status VARCHAR(50) DEFAULT 'draft',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             sent_at TIMESTAMP,
-            open_rate REAL DEFAULT 0.0,
-            click_rate REAL DEFAULT 0.0,
+            open_rate DECIMAL(5,2) DEFAULT 0.0,
+            click_rate DECIMAL(5,2) DEFAULT 0.0,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     ''')
@@ -151,7 +154,7 @@ def init_enhanced_database():
     # Create email_usage table for tracking
     c.execute('''
         CREATE TABLE IF NOT EXISTS email_usage (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
             emails_found INTEGER DEFAULT 0,
             emails_sent INTEGER DEFAULT 0,
@@ -163,11 +166,11 @@ def init_enhanced_database():
     # Create email_verification table
     c.execute('''
         CREATE TABLE IF NOT EXISTS email_verification (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            is_valid BOOLEAN DEFAULT 0,
+            id SERIAL PRIMARY KEY,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            is_valid BOOLEAN DEFAULT FALSE,
             verified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            verification_source TEXT
+            verification_source VARCHAR(100)
         )
     ''')
     
@@ -759,35 +762,45 @@ def search_infinite_emails():
         return jsonify({'error': 'Not authenticated'}), 401
     
     data = request.get_json()
-    query = data.get('query', '')
-    filters = data.get('filters', {})
+    industry = data.get('industry')
+    location = data.get('location')
+    company_size = data.get('company_size')
+    limit = data.get('limit', 1000)
     
-    if not query:
-        return jsonify({'error': 'Query is required'}), 400
+    if not industry:
+        return jsonify({'error': 'Industry is required for infinite search'}), 400
     
     try:
-        # Use enhanced scraper
-        emails = email_finder.search_niche_emails(query, filters)
-        
-        # Update usage
+        # Ensure the infinite_email_db is initialized and use it
+        if infinite_email_db:
+            results = infinite_email_db.search_infinite_emails(
+                industry=industry, 
+                location=location, 
+                company_size=company_size, 
+                limit=limit
+            )
+        else:
+            return jsonify({'error': 'Infinite email database not initialized'}), 500
+
+        # Update usage stats
         user_id = session['user']['id']
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("INSERT OR REPLACE INTO email_usage (user_id, emails_found, date) VALUES (?, ?, DATE('now'))", 
-                 (user_id, len(emails)))
-        conn.commit()
-        conn.close()
+        email_count = results.get('emails_returned', 0)
         
-        return jsonify({
-            'success': True,
-            'emails': emails,
-            'count': len(emails),
-            'query': query
-        })
+        if email_count > 0:
+            conn = get_db_connection()
+            c = conn.cursor()
+            # Use INSERT OR IGNORE and UPDATE for safety
+            c.execute("INSERT OR IGNORE INTO email_usage (user_id, emails_found, date) VALUES (?, 0, DATE('now'))", (user_id,))
+            c.execute("UPDATE email_usage SET emails_found = emails_found + ? WHERE user_id = ? AND date = DATE('now')", 
+                     (email_count, user_id))
+            conn.commit()
+            conn.close()
+        
+        return jsonify(results)
         
     except Exception as e:
         print(f"Error in infinite search: {e}")
-        return jsonify({'error': 'Search failed'}), 500
+        return jsonify({'error': 'Search failed due to a server error'}), 500
 
 @app.route("/api/search/advanced", methods=['POST'], endpoint='advanced_search')
 def advanced_search():

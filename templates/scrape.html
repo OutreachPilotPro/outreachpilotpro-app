@@ -641,20 +641,16 @@
             console.log('Searching infinite database with:', { industry, location, companySize, limit });
             
             try {
-                const response = await fetch('/api/email-search', {
+                const response = await fetch('/api/search/infinite', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ 
-                        query: industry,
-                        search_type: 'niche',
-                        filters: { 
-                            industry: industry,
-                            location: location,
-                            company_size: companySize,
-                            limit: limit
-                        }
+                        industry: industry,
+                        location: location,
+                        company_size: companySize,
+                        limit: limit
                     })
                 });
                 
