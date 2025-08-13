@@ -143,20 +143,67 @@ def init_enhanced_database():
     db_url = app.config['DATABASE_URL']
     is_postgres = db_url.startswith('postgres')
     
-    # Create enhanced users table
     if is_postgres:
+        # PostgreSQL-compatible schema with proper timezone handling
         c.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 email VARCHAR(255) UNIQUE NOT NULL,
                 name VARCHAR(255) NOT NULL,
                 password_hash TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_login TIMESTAMP,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                last_login TIMESTAMP WITH TIME ZONE,
                 subscription_status VARCHAR(50) DEFAULT 'free'
             )
         ''')
+        
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS subscriptions (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                plan_id VARCHAR(100) NOT NULL,
+                status VARCHAR(50) DEFAULT 'active',
+                stripe_subscription_id VARCHAR(255),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP WITH TIME ZONE
+            )
+        ''')
+        
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS campaigns (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                name VARCHAR(255) NOT NULL,
+                emails TEXT,
+                status VARCHAR(50) DEFAULT 'draft',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                sent_at TIMESTAMP WITH TIME ZONE,
+                open_rate DECIMAL(5,2) DEFAULT 0.0,
+                click_rate DECIMAL(5,2) DEFAULT 0.0
+            )
+        ''')
+        
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS email_usage (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                emails_found INTEGER DEFAULT 0,
+                emails_sent INTEGER DEFAULT 0,
+                date DATE DEFAULT CURRENT_DATE
+            )
+        ''')
+        
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS email_verification (
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                is_valid BOOLEAN DEFAULT FALSE,
+                verified_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                verification_source VARCHAR(100)
+            )
+        ''')
     else:
+        # SQLite-compatible schema
         c.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -168,22 +215,7 @@ def init_enhanced_database():
                 subscription_status TEXT DEFAULT 'free'
             )
         ''')
-    
-    # Create enhanced subscriptions table
-    if is_postgres:
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS subscriptions (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL,
-                plan_id VARCHAR(100) NOT NULL,
-                status VARCHAR(50) DEFAULT 'active',
-                stripe_subscription_id VARCHAR(255),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                expires_at TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users (id)
-            )
-        ''')
-    else:
+        
         c.execute('''
             CREATE TABLE IF NOT EXISTS subscriptions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -196,24 +228,7 @@ def init_enhanced_database():
                 FOREIGN KEY (user_id) REFERENCES users (id)
             )
         ''')
-    
-    # Create enhanced campaigns table
-    if is_postgres:
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS campaigns (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL,
-                name VARCHAR(255) NOT NULL,
-                emails TEXT,
-                status VARCHAR(50) DEFAULT 'draft',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                sent_at TIMESTAMP,
-                open_rate DECIMAL(5,2) DEFAULT 0.0,
-                click_rate DECIMAL(5,2) DEFAULT 0.0,
-                FOREIGN KEY (user_id) REFERENCES users (id)
-            )
-        ''')
-    else:
+        
         c.execute('''
             CREATE TABLE IF NOT EXISTS campaigns (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -228,20 +243,7 @@ def init_enhanced_database():
                 FOREIGN KEY (user_id) REFERENCES users (id)
             )
         ''')
-    
-    # Create email_usage table for tracking
-    if is_postgres:
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS email_usage (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL,
-                emails_found INTEGER DEFAULT 0,
-                emails_sent INTEGER DEFAULT 0,
-                date DATE DEFAULT CURRENT_DATE,
-                FOREIGN KEY (user_id) REFERENCES users (id)
-            )
-        ''')
-    else:
+        
         c.execute('''
             CREATE TABLE IF NOT EXISTS email_usage (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -252,19 +254,7 @@ def init_enhanced_database():
                 FOREIGN KEY (user_id) REFERENCES users (id)
             )
         ''')
-    
-    # Create email_verification table
-    if is_postgres:
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS email_verification (
-                id SERIAL PRIMARY KEY,
-                email VARCHAR(255) UNIQUE NOT NULL,
-                is_valid BOOLEAN DEFAULT FALSE,
-                verified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                verification_source VARCHAR(100)
-            )
-        ''')
-    else:
+        
         c.execute('''
             CREATE TABLE IF NOT EXISTS email_verification (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
