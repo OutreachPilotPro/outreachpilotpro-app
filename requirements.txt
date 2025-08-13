@@ -13,3 +13,4 @@ aiohttp==3.9.5
 beautifulsoup4==4.12.3
 dnspython==2.4.2
 psycopg2-binary==2.9.10
+googlesearch-python==1.2.3
