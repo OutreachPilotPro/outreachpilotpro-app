@@ -8,6 +8,7 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from config import Config
 import psycopg2
 from psycopg2.extras import DictCursor
+import sqlite3  # Keep this for the local dev fallback
 import os
 from datetime import datetime
 import json
@@ -95,84 +96,184 @@ except Exception as e:
 
 # Enhanced database connection with better error handling
 def get_db_connection():
-    try:
-        conn = psycopg2.connect(app.config['DATABASE_URL'])
-        conn.cursor_factory = DictCursor
+    """Establishes a connection to the database (PostgreSQL or SQLite)."""
+    db_url = app.config['DATABASE_URL']
+    if db_url.startswith('postgres'):
+        try:
+            conn = psycopg2.connect(db_url)
+            # Use DictCursor to access columns by name
+            conn.cursor_factory = DictCursor
+            return conn
+        except psycopg2.OperationalError as e:
+            print(f"FATAL: Could not connect to PostgreSQL: {e}")
+            raise
+    else: # Fallback to SQLite for local development
+        conn = sqlite3.connect(db_url.replace('sqlite:///', ''))
+        conn.row_factory = sqlite3.Row
         return conn
-    except Exception as e:
-        print(f"FATAL: Database connection failed: {e}")
-        raise
+
+def is_postgres():
+    """Check if we're using PostgreSQL."""
+    return app.config['DATABASE_URL'].startswith('postgres')
+
+def insert_or_ignore(cursor, table, data):
+    """Insert or ignore with database compatibility."""
+    if is_postgres():
+        # PostgreSQL: Use ON CONFLICT DO NOTHING
+        columns = ', '.join(data.keys())
+        placeholders = ', '.join(['%s'] * len(data))
+        values = list(data.values())
+        query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders}) ON CONFLICT DO NOTHING"
+        cursor.execute(query, values)
+    else:
+        # SQLite: Use INSERT OR IGNORE
+        columns = ', '.join(data.keys())
+        placeholders = ', '.join(['?'] * len(data))
+        values = list(data.values())
+        query = f"INSERT OR IGNORE INTO {table} ({columns}) VALUES ({placeholders})"
+        cursor.execute(query, values)
 
 # Enhanced database initialization
 def init_enhanced_database():
+    """Initialize database tables with PostgreSQL/SQLite compatibility."""
     conn = get_db_connection()
     c = conn.cursor()
     
+    # Determine database type for schema compatibility
+    db_url = app.config['DATABASE_URL']
+    is_postgres = db_url.startswith('postgres')
+    
     # Create enhanced users table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            email VARCHAR(255) UNIQUE NOT NULL,
-            name VARCHAR(255) NOT NULL,
-            password_hash TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_login TIMESTAMP,
-            subscription_status VARCHAR(50) DEFAULT 'free'
-        )
-    ''')
+    if is_postgres:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                password_hash TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_login TIMESTAMP,
+                subscription_status VARCHAR(50) DEFAULT 'free'
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                password_hash TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_login TIMESTAMP,
+                subscription_status TEXT DEFAULT 'free'
+            )
+        ''')
     
     # Create enhanced subscriptions table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS subscriptions (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            plan_id VARCHAR(100) NOT NULL,
-            status VARCHAR(50) DEFAULT 'active',
-            stripe_subscription_id VARCHAR(255),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            expires_at TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )
-    ''')
+    if is_postgres:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS subscriptions (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                plan_id VARCHAR(100) NOT NULL,
+                status VARCHAR(50) DEFAULT 'active',
+                stripe_subscription_id VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS subscriptions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                plan_id TEXT NOT NULL,
+                status TEXT DEFAULT 'active',
+                stripe_subscription_id TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
     
     # Create enhanced campaigns table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS campaigns (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            name VARCHAR(255) NOT NULL,
-            emails TEXT,
-            status VARCHAR(50) DEFAULT 'draft',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            sent_at TIMESTAMP,
-            open_rate DECIMAL(5,2) DEFAULT 0.0,
-            click_rate DECIMAL(5,2) DEFAULT 0.0,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )
-    ''')
+    if is_postgres:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS campaigns (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                emails TEXT,
+                status VARCHAR(50) DEFAULT 'draft',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                sent_at TIMESTAMP,
+                open_rate DECIMAL(5,2) DEFAULT 0.0,
+                click_rate DECIMAL(5,2) DEFAULT 0.0,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS campaigns (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                emails TEXT,
+                status TEXT DEFAULT 'draft',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                sent_at TIMESTAMP,
+                open_rate REAL DEFAULT 0.0,
+                click_rate REAL DEFAULT 0.0,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
     
     # Create email_usage table for tracking
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS email_usage (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            emails_found INTEGER DEFAULT 0,
-            emails_sent INTEGER DEFAULT 0,
-            date DATE DEFAULT CURRENT_DATE,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )
-    ''')
+    if is_postgres:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS email_usage (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                emails_found INTEGER DEFAULT 0,
+                emails_sent INTEGER DEFAULT 0,
+                date DATE DEFAULT CURRENT_DATE,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS email_usage (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                emails_found INTEGER DEFAULT 0,
+                emails_sent INTEGER DEFAULT 0,
+                date DATE DEFAULT CURRENT_DATE,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
     
     # Create email_verification table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS email_verification (
-            id SERIAL PRIMARY KEY,
-            email VARCHAR(255) UNIQUE NOT NULL,
-            is_valid BOOLEAN DEFAULT FALSE,
-            verified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            verification_source VARCHAR(100)
-        )
-    ''')
+    if is_postgres:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS email_verification (
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                is_valid BOOLEAN DEFAULT FALSE,
+                verified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                verification_source VARCHAR(100)
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS email_verification (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                is_valid BOOLEAN DEFAULT 0,
+                verified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                verification_source TEXT
+            )
+        ''')
     
     conn.commit()
     conn.close()
@@ -789,10 +890,19 @@ def search_infinite_emails():
         if email_count > 0:
             conn = get_db_connection()
             c = conn.cursor()
-            # Use INSERT OR IGNORE and UPDATE for safety
-            c.execute("INSERT OR IGNORE INTO email_usage (user_id, emails_found, date) VALUES (?, 0, DATE('now'))", (user_id,))
-            c.execute("UPDATE email_usage SET emails_found = emails_found + ? WHERE user_id = ? AND date = DATE('now')", 
-                     (email_count, user_id))
+            # Use database-compatible insert or ignore
+            insert_or_ignore(c, 'email_usage', {
+                'user_id': user_id,
+                'emails_found': 0,
+                'date': 'CURRENT_DATE'
+            })
+            # Update with database-compatible syntax
+            if is_postgres():
+                c.execute("UPDATE email_usage SET emails_found = emails_found + %s WHERE user_id = %s AND date = CURRENT_DATE", 
+                         (email_count, user_id))
+            else:
+                c.execute("UPDATE email_usage SET emails_found = emails_found + ? WHERE user_id = ? AND date = DATE('now')", 
+                         (email_count, user_id))
             conn.commit()
             conn.close()
         
@@ -846,8 +956,13 @@ def advanced_search():
         user_id = session['user']['id']
         conn = get_db_connection()
         c = conn.cursor()
-        c.execute("INSERT OR REPLACE INTO email_usage (user_id, emails_found, date) VALUES (?, ?, DATE('now'))", 
-                 (user_id, len(unique_emails)))
+        # Use database-compatible insert or replace
+        if is_postgres():
+            c.execute("INSERT INTO email_usage (user_id, emails_found, date) VALUES (%s, %s, CURRENT_DATE) ON CONFLICT (user_id, date) DO UPDATE SET emails_found = EXCLUDED.emails_found", 
+                     (user_id, len(unique_emails)))
+        else:
+            c.execute("INSERT OR REPLACE INTO email_usage (user_id, emails_found, date) VALUES (?, ?, DATE('now'))", 
+                     (user_id, len(unique_emails)))
         conn.commit()
         conn.close()
         

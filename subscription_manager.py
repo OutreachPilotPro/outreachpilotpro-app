@@ -2,6 +2,8 @@
 
 import stripe
 import sqlite3
+import psycopg2
+from psycopg2.extras import DictCursor
 import os
 from datetime import datetime, timedelta
 from enum import Enum
@@ -178,94 +180,192 @@ def create_subscription_tables():
     """
 
 class SubscriptionManager:
-    def __init__(self, db_path="outreachpilot.db"):
-        self.db_path = db_path
+    def __init__(self, db_path=None):
         from config import Config
+        self.db_url = Config.DATABASE_URL
         stripe.api_key = Config.STRIPE_SECRET_KEY
         self._init_database()
     
+    def _get_db_connection(self):
+        """Get database connection with PostgreSQL/SQLite compatibility."""
+        if self.db_url.startswith('postgres'):
+            try:
+                conn = psycopg2.connect(self.db_url)
+                conn.cursor_factory = DictCursor
+                return conn
+            except psycopg2.OperationalError as e:
+                logger.error(f"Could not connect to PostgreSQL: {e}")
+                raise
+        else:  # Fallback to SQLite for local development
+            db_path = self.db_url.replace('sqlite:///', '')
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            return conn
+    
+    def _is_postgres(self):
+        """Check if we're using PostgreSQL."""
+        return self.db_url.startswith('postgres')
+    
     def _init_database(self):
         """Initialize database tables"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_db_connection()
         c = conn.cursor()
         
-        # Create tables - execute each statement individually
-        table_statements = [
-            """CREATE TABLE IF NOT EXISTS subscriptions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                tier TEXT NOT NULL DEFAULT 'free',
-                stripe_customer_id TEXT,
-                stripe_subscription_id TEXT,
-                status TEXT DEFAULT 'active',
-                current_period_start TIMESTAMP,
-                current_period_end TIMESTAMP,
-                cancel_at_period_end BOOLEAN DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )""",
-            
-            """CREATE TABLE IF NOT EXISTS usage_tracking (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                month TEXT NOT NULL,
-                emails_sent INTEGER DEFAULT 0,
-                emails_scraped INTEGER DEFAULT 0,
-                campaigns_created INTEGER DEFAULT 0,
-                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(user_id, month)
-            )""",
-            
-            """CREATE TABLE IF NOT EXISTS payment_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                stripe_payment_intent_id TEXT,
-                amount INTEGER NOT NULL,
-                currency TEXT DEFAULT 'usd',
-                status TEXT NOT NULL,
-                description TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )""",
-            
-            """CREATE TABLE IF NOT EXISTS email_queue (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                campaign_id INTEGER NOT NULL,
-                recipient_email TEXT NOT NULL,
-                status TEXT DEFAULT 'pending',
-                scheduled_for TIMESTAMP,
-                sent_at TIMESTAMP,
-                opened_at TIMESTAMP,
-                clicked_at TIMESTAMP,
-                error_message TEXT,
-                retry_count INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )""",
-            
-            """CREATE TABLE IF NOT EXISTS campaigns (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                name TEXT NOT NULL,
-                subject TEXT NOT NULL,
-                body TEXT NOT NULL,
-                from_name TEXT,
-                reply_to TEXT,
-                recipient_list_id INTEGER,
-                scheduled_time TIMESTAMP,
-                status TEXT DEFAULT 'draft',
-                started_at TIMESTAMP,
-                completed_at TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )""",
-            
-            """CREATE TABLE IF NOT EXISTS google_tokens (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                access_token TEXT NOT NULL,
-                refresh_token TEXT,
-                expires_at TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )"""
-        ]
+        # Create tables with database compatibility
+        if self._is_postgres():
+            table_statements = [
+                """CREATE TABLE IF NOT EXISTS subscriptions (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    tier VARCHAR(50) NOT NULL DEFAULT 'free',
+                    stripe_customer_id VARCHAR(255),
+                    stripe_subscription_id VARCHAR(255),
+                    status VARCHAR(50) DEFAULT 'active',
+                    current_period_start TIMESTAMP,
+                    current_period_end TIMESTAMP,
+                    cancel_at_period_end BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""",
+                
+                """CREATE TABLE IF NOT EXISTS usage_tracking (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    month VARCHAR(7) NOT NULL,
+                    emails_sent INTEGER DEFAULT 0,
+                    emails_scraped INTEGER DEFAULT 0,
+                    campaigns_created INTEGER DEFAULT 0,
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, month)
+                )""",
+                
+                """CREATE TABLE IF NOT EXISTS payment_history (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    stripe_payment_intent_id VARCHAR(255),
+                    amount INTEGER NOT NULL,
+                    currency VARCHAR(3) DEFAULT 'usd',
+                    status VARCHAR(50) NOT NULL,
+                    description TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""",
+                
+                """CREATE TABLE IF NOT EXISTS email_queue (
+                    id SERIAL PRIMARY KEY,
+                    campaign_id INTEGER NOT NULL,
+                    recipient_email VARCHAR(255) NOT NULL,
+                    status VARCHAR(50) DEFAULT 'pending',
+                    scheduled_for TIMESTAMP,
+                    sent_at TIMESTAMP,
+                    opened_at TIMESTAMP,
+                    clicked_at TIMESTAMP,
+                    error_message TEXT,
+                    retry_count INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""",
+                
+                """CREATE TABLE IF NOT EXISTS campaigns (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    subject VARCHAR(255) NOT NULL,
+                    body TEXT NOT NULL,
+                    from_name VARCHAR(255),
+                    reply_to VARCHAR(255),
+                    recipient_list_id INTEGER,
+                    scheduled_time TIMESTAMP,
+                    status VARCHAR(50) DEFAULT 'draft',
+                    started_at TIMESTAMP,
+                    completed_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""",
+                
+                """CREATE TABLE IF NOT EXISTS google_tokens (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    access_token TEXT NOT NULL,
+                    refresh_token TEXT,
+                    expires_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )"""
+            ]
+        else:
+            table_statements = [
+                """CREATE TABLE IF NOT EXISTS subscriptions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    tier TEXT NOT NULL DEFAULT 'free',
+                    stripe_customer_id TEXT,
+                    stripe_subscription_id TEXT,
+                    status TEXT DEFAULT 'active',
+                    current_period_start TIMESTAMP,
+                    current_period_end TIMESTAMP,
+                    cancel_at_period_end BOOLEAN DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""",
+                
+                """CREATE TABLE IF NOT EXISTS usage_tracking (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    month TEXT NOT NULL,
+                    emails_sent INTEGER DEFAULT 0,
+                    emails_scraped INTEGER DEFAULT 0,
+                    campaigns_created INTEGER DEFAULT 0,
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, month)
+                )""",
+                
+                """CREATE TABLE IF NOT EXISTS payment_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    stripe_payment_intent_id TEXT,
+                    amount INTEGER NOT NULL,
+                    currency TEXT DEFAULT 'usd',
+                    status TEXT NOT NULL,
+                    description TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""",
+                
+                """CREATE TABLE IF NOT EXISTS email_queue (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    campaign_id INTEGER NOT NULL,
+                    recipient_email TEXT NOT NULL,
+                    status TEXT DEFAULT 'pending',
+                    scheduled_for TIMESTAMP,
+                    sent_at TIMESTAMP,
+                    opened_at TIMESTAMP,
+                    clicked_at TIMESTAMP,
+                    error_message TEXT,
+                    retry_count INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""",
+                
+                """CREATE TABLE IF NOT EXISTS campaigns (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    subject TEXT NOT NULL,
+                    body TEXT NOT NULL,
+                    from_name TEXT,
+                    reply_to TEXT,
+                    recipient_list_id INTEGER,
+                    scheduled_time TIMESTAMP,
+                    status TEXT DEFAULT 'draft',
+                    started_at TIMESTAMP,
+                    completed_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""",
+                
+                """CREATE TABLE IF NOT EXISTS google_tokens (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    access_token TEXT NOT NULL,
+                    refresh_token TEXT,
+                    expires_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )"""
+            ]
         
         for statement in table_statements:
             try:
@@ -279,19 +379,27 @@ class SubscriptionManager:
     def get_user_subscription(self, user_id: int) -> Dict:
         """Get user's current subscription"""
         try:
-            conn = sqlite3.connect(self.db_path, timeout=30.0)
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.execute("PRAGMA synchronous=NORMAL")
+            conn = self._get_db_connection()
             c = conn.cursor()
             
-            c.execute("""
-                SELECT tier, status, current_period_start, current_period_end, 
-                       cancel_at_period_end, stripe_subscription_id
-                FROM subscriptions 
-                WHERE user_id = ? AND status IN ('active', 'trialing')
-                ORDER BY created_at DESC
-                LIMIT 1
-            """, (user_id,))
+            if self._is_postgres():
+                c.execute("""
+                    SELECT tier, status, current_period_start, current_period_end, 
+                           cancel_at_period_end, stripe_subscription_id
+                    FROM subscriptions 
+                    WHERE user_id = %s AND status IN ('active', 'trialing')
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                """, (user_id,))
+            else:
+                c.execute("""
+                    SELECT tier, status, current_period_start, current_period_end, 
+                           cancel_at_period_end, stripe_subscription_id
+                    FROM subscriptions 
+                    WHERE user_id = ? AND status IN ('active', 'trialing')
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                """, (user_id,))
             
             result = c.fetchone()
             conn.close()
@@ -344,9 +452,7 @@ class SubscriptionManager:
     def check_limit(self, user_id: int, limit_type: str) -> Dict:
         """Check if user has reached their subscription limit"""
         try:
-            conn = sqlite3.connect(self.db_path, timeout=30.0)
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.execute("PRAGMA synchronous=NORMAL")
+            conn = self._get_db_connection()
             c = conn.cursor()
             
             # Get user's subscription tier
@@ -355,11 +461,18 @@ class SubscriptionManager:
             
             # Get current month's usage
             current_month = datetime.now().strftime('%Y-%m')
-            c.execute("""
-                SELECT emails_sent, emails_scraped, campaigns_created
-                FROM usage_tracking 
-                WHERE user_id = ? AND month = ?
-            """, (user_id, current_month))
+            if self._is_postgres():
+                c.execute("""
+                    SELECT emails_sent, emails_scraped, campaigns_created
+                    FROM usage_tracking 
+                    WHERE user_id = %s AND month = %s
+                """, (user_id, current_month))
+            else:
+                c.execute("""
+                    SELECT emails_sent, emails_scraped, campaigns_created
+                    FROM usage_tracking 
+                    WHERE user_id = ? AND month = ?
+                """, (user_id, current_month))
             
             result = c.fetchone()
             if not result:
@@ -404,7 +517,7 @@ class SubscriptionManager:
     
     def increment_usage(self, user_id: int, usage_type: str, amount: int = 1):
         """Increment usage counter"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_db_connection()
         c = conn.cursor()
         
         current_month = datetime.now().strftime('%Y-%m')
@@ -416,20 +529,36 @@ class SubscriptionManager:
         
         column = column_map.get(usage_type)
         if column:
-            c.execute(f"""
-                UPDATE usage_tracking 
-                SET {column} = {column} + ?, last_updated = CURRENT_TIMESTAMP
-                WHERE user_id = ? AND month = ?
-            """, (amount, user_id, current_month))
-            
-            if c.rowcount == 0:
-                # Create record if doesn't exist
-                self._create_usage_record(user_id, current_month)
+            if self._is_postgres():
                 c.execute(f"""
                     UPDATE usage_tracking 
-                    SET {column} = ?
+                    SET {column} = {column} + %s, last_updated = CURRENT_TIMESTAMP
+                    WHERE user_id = %s AND month = %s
+                """, (amount, user_id, current_month))
+                
+                if c.rowcount == 0:
+                    # Create record if doesn't exist
+                    self._create_usage_record(user_id, current_month)
+                    c.execute(f"""
+                        UPDATE usage_tracking 
+                        SET {column} = %s
+                        WHERE user_id = %s AND month = %s
+                    """, (amount, user_id, current_month))
+            else:
+                c.execute(f"""
+                    UPDATE usage_tracking 
+                    SET {column} = {column} + ?, last_updated = CURRENT_TIMESTAMP
                     WHERE user_id = ? AND month = ?
                 """, (amount, user_id, current_month))
+                
+                if c.rowcount == 0:
+                    # Create record if doesn't exist
+                    self._create_usage_record(user_id, current_month)
+                    c.execute(f"""
+                        UPDATE usage_tracking 
+                        SET {column} = ?
+                        WHERE user_id = ? AND month = ?
+                    """, (amount, user_id, current_month))
             
             conn.commit()
         
@@ -437,12 +566,19 @@ class SubscriptionManager:
     
     def _create_usage_record(self, user_id: int, month: str):
         """Create usage tracking record for a month"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_db_connection()
         c = conn.cursor()
-        c.execute("""
-            INSERT OR IGNORE INTO usage_tracking (user_id, month)
-            VALUES (?, ?)
-        """, (user_id, month))
+        if self._is_postgres():
+            c.execute("""
+                INSERT INTO usage_tracking (user_id, month)
+                VALUES (%s, %s)
+                ON CONFLICT (user_id, month) DO NOTHING
+            """, (user_id, month))
+        else:
+            c.execute("""
+                INSERT OR IGNORE INTO usage_tracking (user_id, month)
+                VALUES (?, ?)
+            """, (user_id, month))
         conn.commit()
         conn.close()
     
@@ -454,11 +590,12 @@ class SubscriptionManager:
         
         # Get user email
         try:
-            conn = sqlite3.connect(self.db_path, timeout=30.0)
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.execute("PRAGMA synchronous=NORMAL")
+            conn = self._get_db_connection()
             c = conn.cursor()
-            c.execute("SELECT email FROM users WHERE id = ?", (user_id,))
+            if self._is_postgres():
+                c.execute("SELECT email FROM users WHERE id = %s", (user_id,))
+            else:
+                c.execute("SELECT email FROM users WHERE id = ?", (user_id,))
             result = c.fetchone()
             conn.close()
             
@@ -543,55 +680,90 @@ class SubscriptionManager:
     
     def _update_user_subscription(self, user_id: int, plan_id: str, session: Dict):
         """Update user subscription after successful payment"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_db_connection()
         c = conn.cursor()
         
         # Calculate period dates
         current_time = datetime.now()
         period_end = current_time + timedelta(days=30)
         
-        c.execute("""
-            INSERT OR REPLACE INTO subscriptions 
-            (user_id, tier, stripe_customer_id, stripe_subscription_id, status, 
-             current_period_start, current_period_end, updated_at)
-            VALUES (?, ?, ?, ?, 'active', ?, ?, CURRENT_TIMESTAMP)
-        """, (user_id, plan_id, session['customer'], session['subscription'], 
-              current_time, period_end))
+        if self._is_postgres():
+            c.execute("""
+                INSERT INTO subscriptions 
+                (user_id, tier, stripe_customer_id, stripe_subscription_id, status, 
+                 current_period_start, current_period_end, updated_at)
+                VALUES (%s, %s, %s, %s, 'active', %s, %s, CURRENT_TIMESTAMP)
+                ON CONFLICT (user_id) DO UPDATE SET
+                tier = EXCLUDED.tier,
+                stripe_customer_id = EXCLUDED.stripe_customer_id,
+                stripe_subscription_id = EXCLUDED.stripe_subscription_id,
+                status = EXCLUDED.status,
+                current_period_start = EXCLUDED.current_period_start,
+                current_period_end = EXCLUDED.current_period_end,
+                updated_at = CURRENT_TIMESTAMP
+            """, (user_id, plan_id, session['customer'], session['subscription'], 
+                  current_time, period_end))
+        else:
+            c.execute("""
+                INSERT OR REPLACE INTO subscriptions 
+                (user_id, tier, stripe_customer_id, stripe_subscription_id, status, 
+                 current_period_start, current_period_end, updated_at)
+                VALUES (?, ?, ?, ?, 'active', ?, ?, CURRENT_TIMESTAMP)
+            """, (user_id, plan_id, session['customer'], session['subscription'], 
+                  current_time, period_end))
         
         conn.commit()
         conn.close()
     
     def _update_subscription_status(self, stripe_subscription_id: str, status: str):
         """Update subscription status"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_db_connection()
         c = conn.cursor()
         
-        c.execute("""
-            UPDATE subscriptions 
-            SET status = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE stripe_subscription_id = ?
-        """, (status, stripe_subscription_id))
+        if self._is_postgres():
+            c.execute("""
+                UPDATE subscriptions 
+                SET status = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE stripe_subscription_id = %s
+            """, (status, stripe_subscription_id))
+        else:
+            c.execute("""
+                UPDATE subscriptions 
+                SET status = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE stripe_subscription_id = ?
+            """, (status, stripe_subscription_id))
         
         conn.commit()
         conn.close()
     
     def _update_subscription_from_stripe(self, subscription: Dict):
         """Update subscription from Stripe webhook"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_db_connection()
         c = conn.cursor()
         
         # Get the plan tier from metadata or determine from price
         plan_tier = 'professional'  # Default fallback
         
-        c.execute("""
-            UPDATE subscriptions 
-            SET status = ?, current_period_start = ?, current_period_end = ?,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE stripe_subscription_id = ?
-        """, (subscription['status'], 
-              datetime.fromtimestamp(subscription['current_period_start']),
-              datetime.fromtimestamp(subscription['current_period_end']),
-              subscription['id']))
+        if self._is_postgres():
+            c.execute("""
+                UPDATE subscriptions 
+                SET status = %s, current_period_start = %s, current_period_end = %s,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE stripe_subscription_id = %s
+            """, (subscription['status'], 
+                  datetime.fromtimestamp(subscription['current_period_start']),
+                  datetime.fromtimestamp(subscription['current_period_end']),
+                  subscription['id']))
+        else:
+            c.execute("""
+                UPDATE subscriptions 
+                SET status = ?, current_period_start = ?, current_period_end = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE stripe_subscription_id = ?
+            """, (subscription['status'], 
+                  datetime.fromtimestamp(subscription['current_period_start']),
+                  datetime.fromtimestamp(subscription['current_period_end']),
+                  subscription['id']))
         
         conn.commit()
         conn.close()
@@ -610,13 +782,20 @@ class SubscriptionManager:
                 )
             
             # Update local database
-            conn = sqlite3.connect(self.db_path)
+            conn = self._get_db_connection()
             c = conn.cursor()
-            c.execute("""
-                UPDATE subscriptions 
-                SET cancel_at_period_end = 1, updated_at = CURRENT_TIMESTAMP
-                WHERE user_id = ? AND status = 'active'
-            """, (user_id,))
+            if self._is_postgres():
+                c.execute("""
+                    UPDATE subscriptions 
+                    SET cancel_at_period_end = TRUE, updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = %s AND status = 'active'
+                """, (user_id,))
+            else:
+                c.execute("""
+                    UPDATE subscriptions 
+                    SET cancel_at_period_end = 1, updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = ? AND status = 'active'
+                """, (user_id,))
             conn.commit()
             conn.close()
             
@@ -629,16 +808,23 @@ class SubscriptionManager:
     def get_usage_stats(self, user_id: int) -> Dict:
         """Get user's usage statistics"""
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = self._get_db_connection()
             c = conn.cursor()
             
             # Get current month usage
             current_month = datetime.now().strftime('%Y-%m')
-            c.execute("""
-                SELECT emails_sent, emails_scraped, campaigns_created
-                FROM usage_tracking 
-                WHERE user_id = ? AND month = ?
-            """, (user_id, current_month))
+            if self._is_postgres():
+                c.execute("""
+                    SELECT emails_sent, emails_scraped, campaigns_created
+                    FROM usage_tracking 
+                    WHERE user_id = %s AND month = %s
+                """, (user_id, current_month))
+            else:
+                c.execute("""
+                    SELECT emails_sent, emails_scraped, campaigns_created
+                    FROM usage_tracking 
+                    WHERE user_id = ? AND month = ?
+                """, (user_id, current_month))
             
             current_usage = c.fetchone()
             if not current_usage:
@@ -710,13 +896,20 @@ class SubscriptionManager:
                 )
             
             # Update local database
-            conn = sqlite3.connect(self.db_path)
+            conn = self._get_db_connection()
             c = conn.cursor()
-            c.execute("""
-                UPDATE subscriptions 
-                SET tier = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE user_id = ? AND status = 'active'
-            """, (new_plan_id, user_id))
+            if self._is_postgres():
+                c.execute("""
+                    UPDATE subscriptions 
+                    SET tier = %s, updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = %s AND status = 'active'
+                """, (new_plan_id, user_id))
+            else:
+                c.execute("""
+                    UPDATE subscriptions 
+                    SET tier = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = ? AND status = 'active'
+                """, (new_plan_id, user_id))
             conn.commit()
             conn.close()
             
@@ -729,17 +922,34 @@ class SubscriptionManager:
     def create_paid_subscription(self, user_id: int, plan_id: str, stripe_subscription_id: str, stripe_customer_id: str):
         """Create a paid subscription for a user"""
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = self._get_db_connection()
             c = conn.cursor()
             
             # Insert or update subscription
-            c.execute("""
-                INSERT OR REPLACE INTO subscriptions 
-                (user_id, tier, stripe_customer_id, stripe_subscription_id, status, 
-                 current_period_start, current_period_end, updated_at)
-                VALUES (?, ?, ?, ?, 'active', CURRENT_TIMESTAMP, 
-                        datetime('now', '+1 month'), CURRENT_TIMESTAMP)
-            """, (user_id, plan_id, stripe_customer_id, stripe_subscription_id))
+            if self._is_postgres():
+                c.execute("""
+                    INSERT INTO subscriptions 
+                    (user_id, tier, stripe_customer_id, stripe_subscription_id, status, 
+                     current_period_start, current_period_end, updated_at)
+                    VALUES (%s, %s, %s, %s, 'active', CURRENT_TIMESTAMP, 
+                            CURRENT_TIMESTAMP + INTERVAL '1 month', CURRENT_TIMESTAMP)
+                    ON CONFLICT (user_id) DO UPDATE SET
+                    tier = EXCLUDED.tier,
+                    stripe_customer_id = EXCLUDED.stripe_customer_id,
+                    stripe_subscription_id = EXCLUDED.stripe_subscription_id,
+                    status = EXCLUDED.status,
+                    current_period_start = EXCLUDED.current_period_start,
+                    current_period_end = EXCLUDED.current_period_end,
+                    updated_at = CURRENT_TIMESTAMP
+                """, (user_id, plan_id, stripe_customer_id, stripe_subscription_id))
+            else:
+                c.execute("""
+                    INSERT OR REPLACE INTO subscriptions 
+                    (user_id, tier, stripe_customer_id, stripe_subscription_id, status, 
+                     current_period_start, current_period_end, updated_at)
+                    VALUES (?, ?, ?, ?, 'active', CURRENT_TIMESTAMP, 
+                            datetime('now', '+1 month'), CURRENT_TIMESTAMP)
+                """, (user_id, plan_id, stripe_customer_id, stripe_subscription_id))
             
             conn.commit()
             conn.close()
@@ -754,16 +964,30 @@ class SubscriptionManager:
     def create_free_subscription(self, user_id: int, plan_id: str):
         """Create a free subscription for a user"""
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = self._get_db_connection()
             c = conn.cursor()
             
             # Insert or update subscription
-            c.execute("""
-                INSERT OR REPLACE INTO subscriptions 
-                (user_id, tier, status, current_period_start, current_period_end, updated_at)
-                VALUES (?, ?, 'active', CURRENT_TIMESTAMP, 
-                        datetime('now', '+1 month'), CURRENT_TIMESTAMP)
-            """, (user_id, plan_id))
+            if self._is_postgres():
+                c.execute("""
+                    INSERT INTO subscriptions 
+                    (user_id, tier, status, current_period_start, current_period_end, updated_at)
+                    VALUES (%s, %s, 'active', CURRENT_TIMESTAMP, 
+                            CURRENT_TIMESTAMP + INTERVAL '1 month', CURRENT_TIMESTAMP)
+                    ON CONFLICT (user_id) DO UPDATE SET
+                    tier = EXCLUDED.tier,
+                    status = EXCLUDED.status,
+                    current_period_start = EXCLUDED.current_period_start,
+                    current_period_end = EXCLUDED.current_period_end,
+                    updated_at = CURRENT_TIMESTAMP
+                """, (user_id, plan_id))
+            else:
+                c.execute("""
+                    INSERT OR REPLACE INTO subscriptions 
+                    (user_id, tier, status, current_period_start, current_period_end, updated_at)
+                    VALUES (?, ?, 'active', CURRENT_TIMESTAMP, 
+                            datetime('now', '+1 month'), CURRENT_TIMESTAMP)
+                """, (user_id, plan_id))
             
             conn.commit()
             conn.close()
