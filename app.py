@@ -186,8 +186,8 @@ except Exception as e:
 # Initialize consolidated email finder service
 email_finder = EmailFinder()
 
-@app.route("/", endpoint='index')
-def home():
+@app.route("/")
+def index():
     return render_template("index.html")
 
 # Route aliases removed - using endpoint parameter instead for cleaner code
