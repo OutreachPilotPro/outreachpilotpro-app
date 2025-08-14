@@ -48,8 +48,8 @@ class InfiniteEmailDatabase:
                     'https://api.producthunt.com/v1/posts',
                     'https://api.crunchbase.com/v3.1/organizations'
                 ],
-                'tech_companies': self._load_tech_companies(),
-                'venture_capital': self._load_vc_companies()
+                'tech_companies': self._get_tech_companies(),
+                'venture_capital': self._get_vc_companies()
             },
             'healthcare': {
                 'medical_directories': [
@@ -57,8 +57,8 @@ class InfiniteEmailDatabase:
                     'https://api.vitals.com/v1/doctors',
                     'https://api.zocdoc.com/v1/doctors'
                 ],
-                'pharma_companies': self._load_pharma_companies(),
-                'healthcare_systems': self._load_healthcare_systems()
+                'pharma_companies': self._get_pharma_companies(),
+                'healthcare_systems': self._get_healthcare_systems()
             },
             'finance': {
                 'financial_directories': [
@@ -66,52 +66,447 @@ class InfiniteEmailDatabase:
                     'https://api.finra.org/v1/firms',
                     'https://api.sec.gov/edgar/companies'
                 ],
-                'banks': self._load_bank_companies(),
-                'investment_firms': self._load_investment_firms()
+                'banks': self._get_bank_companies(),
+                'investment_firms': self._get_investment_firms()
             }
         }
     
     def init_database(self):
-        """Initialize the database with sample data"""
+        """Initialize the database with sample data using a single, efficient connection."""
         print("Initializing email database...")
-        
+        conn = None
         try:
-            # Load comprehensive company data
-            self._load_tech_companies()
-            self._load_ecommerce_companies()
-            self._load_healthcare_companies()
-            self._load_finance_companies()
-            self._load_real_estate_companies()
-            self._load_education_companies()
-            self._load_consulting_companies()
-            self._load_marketing_companies()
-            self._load_legal_companies()
-            self._load_manufacturing_companies()
-            self._load_retail_companies()
-            self._load_restaurant_companies()
-            self._load_fitness_companies()
-            self._load_beauty_companies()
-            self._load_automotive_companies()
-            self._load_travel_companies()
-            self._load_nonprofit_companies()
-            self._load_government_companies()
+            conn = sqlite3.connect(self.db_path, timeout=15.0)
+            c = conn.cursor()
             
-            # Load additional industry data
-            self._load_pharma_companies()
-            self._load_bank_companies()
-            self._load_vc_companies()
-            self._load_healthcare_systems()
-            self._load_investment_firms()
+            self._create_company_table_if_not_exists(c)
+
+            # Consolidate all company data into a single list
+            all_companies = []
+            company_loaders = [
+                self._get_tech_companies, self._get_ecommerce_companies, self._get_healthcare_companies,
+                self._get_finance_companies, self._get_real_estate_companies, self._get_education_companies,
+                self._get_consulting_companies, self._get_marketing_companies, self._get_legal_companies,
+                self._get_manufacturing_companies, self._get_retail_companies, self._get_restaurant_companies,
+                self._get_fitness_companies, self._get_beauty_companies, self._get_automotive_companies,
+                self._get_travel_companies, self._get_nonprofit_companies, self._get_government_companies,
+                self._get_pharma_companies, self._get_bank_companies, self._get_vc_companies,
+                self._get_healthcare_systems, self._get_investment_firms
+            ]
+
+            for loader in company_loaders:
+                all_companies.extend(loader())
             
-            print("✅ Email database initialized successfully")
+            self._add_companies_to_database(c, all_companies)
             
+            conn.commit()
+            print("✅ Email database initialized successfully.")
+            
+        except sqlite3.OperationalError as e:
+            if "database is locked" in str(e):
+                print("⚠️ Warning: Database is currently locked. Initialization will be skipped.")
+            else:
+                print(f"⚠️ Warning: Could not initialize database: {e}")
+                if conn: conn.rollback()
         except Exception as e:
-            print(f"⚠️  Warning: Could not initialize database: {e}")
-            # Don't fail the entire app if database initialization fails
-    
-    def _load_tech_companies(self):
+            print(f"⚠️ Warning: An unexpected error occurred during database initialization: {e}")
+            if conn: conn.rollback()
+        finally:
+            if conn:
+                conn.close()
+
+    def _create_company_table_if_not_exists(self, cursor):
+        """Creates the company_database table with the correct schema."""
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS company_database (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                domain TEXT NOT NULL UNIQUE,
+                industry TEXT, subcategory TEXT, size TEXT, revenue TEXT,
+                location TEXT, technology TEXT, job_titles TEXT,
+                environmental TEXT, social_impact TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+    def _get_ecommerce_companies(self):
+        """Return e-commerce companies with detailed targeting data"""
+        return [
+            {
+                'name': 'FashionForward',
+                'domain': 'fashionforward.com',
+                'industry': 'ecommerce',
+                'subcategory': 'fashion-apparel',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'Los Angeles, CA',
+                'technology': ['shopify', 'mailchimp', 'google-ads'],
+                'job_titles': ['ceo', 'cmo', 'ecommerce-manager'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['women-owned', 'fair-trade']
+            },
+            {
+                'name': 'GreenHome Store',
+                'domain': 'greenhome.com',
+                'industry': 'ecommerce',
+                'subcategory': 'home-garden',
+                'size': 'small',
+                'revenue': '1m-10m',
+                'location': 'Portland, OR',
+                'technology': ['woocommerce', 'wordpress', 'paypal'],
+                'job_titles': ['founder', 'marketing-director'],
+                'environmental': 'organic',
+                'social_impact': ['b-corp', 'carbon-neutral']
+            },
+            {
+                'name': 'TechGadgets Pro',
+                'domain': 'techgadgetspro.com',
+                'industry': 'ecommerce',
+                'subcategory': 'electronics',
+                'size': 'large',
+                'revenue': 'over-100m',
+                'location': 'Seattle, WA',
+                'technology': ['magento', 'salesforce', 'hubspot'],
+                'job_titles': ['ceo', 'cto', 'operations-manager'],
+                'environmental': 'recycling',
+                'social_impact': ['veteran-owned']
+            },
+            {
+                'name': 'PetParadise',
+                'domain': 'petparadise.com',
+                'industry': 'ecommerce',
+                'subcategory': 'pet-supplies',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'Denver, CO',
+                'technology': ['shopify', 'klaviyo', 'facebook-ads'],
+                'job_titles': ['ceo', 'marketing-director', 'operations-manager'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['animal-welfare']
+            },
+            {
+                'name': 'SportsElite',
+                'domain': 'sportselite.com',
+                'industry': 'ecommerce',
+                'subcategory': 'sports-outdoors',
+                'size': 'large',
+                'revenue': '50m-100m',
+                'location': 'Portland, OR',
+                'technology': ['bigcommerce', 'mailchimp', 'google-ads'],
+                'job_titles': ['ceo', 'cmo', 'ecommerce-manager'],
+                'environmental': 'sustainable',
+                'social_impact': ['local-sourcing']
+            }
+        ]
+
+    def _get_healthcare_companies(self):
+        """Return healthcare companies with detailed targeting data"""
+        return [
+            {
+                'name': 'Wellness Medical Group',
+                'domain': 'wellnessmedical.com',
+                'industry': 'healthcare',
+                'subcategory': 'primary-care',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'Boston, MA',
+                'technology': ['epic', 'zoom', 'microsoft'],
+                'job_titles': ['medical-director', 'hr-director'],
+                'environmental': 'sustainable',
+                'social_impact': ['disability-friendly']
+            },
+            {
+                'name': 'Mental Health Partners',
+                'domain': 'mentalhealthpartners.com',
+                'industry': 'healthcare',
+                'subcategory': 'mental-health',
+                'size': 'small',
+                'revenue': '1m-10m',
+                'location': 'Denver, CO',
+                'technology': ['telemedicine', 'slack', 'quickbooks'],
+                'job_titles': ['clinical-director', 'operations-manager'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['lgbtq-friendly']
+            }
+        ]
+
+    def _get_finance_companies(self):
+        """Return finance companies with detailed targeting data"""
+        return [
+            {
+                'name': 'SecureBank Financial',
+                'domain': 'securebank.com',
+                'industry': 'finance',
+                'subcategory': 'retail-banking',
+                'size': 'large',
+                'revenue': 'over-100m',
+                'location': 'New York, NY',
+                'technology': ['fiserv', 'salesforce', 'oracle'],
+                'job_titles': ['ceo', 'cto', 'compliance-director'],
+                'environmental': 'sustainable',
+                'social_impact': ['community-investment']
+            }
+        ]
+
+    def _get_real_estate_companies(self):
+        """Return real estate companies with detailed targeting data"""
+        return [
+            {
+                'name': 'Urban Properties',
+                'domain': 'urbanproperties.com',
+                'industry': 'real-estate',
+                'subcategory': 'residential',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'Los Angeles, CA',
+                'technology': ['zillow', 'salesforce', 'quickbooks'],
+                'job_titles': ['ceo', 'broker', 'property-manager'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['affordable-housing']
+            }
+        ]
+
+    def _get_education_companies(self):
+        """Return education companies with detailed targeting data"""
+        return [
+            {
+                'name': 'EduTech Solutions',
+                'domain': 'edutechsolutions.com',
+                'industry': 'education',
+                'subcategory': 'edtech',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'Austin, TX',
+                'technology': ['canvas', 'zoom', 'google-workspace'],
+                'job_titles': ['ceo', 'cto', 'curriculum-director'],
+                'environmental': 'sustainable',
+                'social_impact': ['digital-literacy']
+            }
+        ]
+
+    def _get_consulting_companies(self):
+        """Return consulting companies with detailed targeting data"""
+        return [
+            {
+                'name': 'Strategic Consulting Group',
+                'domain': 'strategicconsulting.com',
+                'industry': 'consulting',
+                'subcategory': 'management-consulting',
+                'size': 'large',
+                'revenue': '50m-100m',
+                'location': 'Chicago, IL',
+                'technology': ['salesforce', 'slack', 'microsoft'],
+                'job_titles': ['ceo', 'partner', 'consultant'],
+                'environmental': 'sustainable',
+                'social_impact': ['diversity-inclusion']
+            }
+        ]
+
+    def _get_marketing_companies(self):
+        """Return marketing companies with detailed targeting data"""
+        return [
+            {
+                'name': 'Creative Marketing Agency',
+                'domain': 'creativemarketing.com',
+                'industry': 'marketing',
+                'subcategory': 'digital-marketing',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'Miami, FL',
+                'technology': ['hubspot', 'google-ads', 'facebook-ads'],
+                'job_titles': ['ceo', 'creative-director', 'account-manager'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['women-owned']
+            }
+        ]
+
+    def _get_legal_companies(self):
+        """Return legal companies with detailed targeting data"""
+        return [
+            {
+                'name': 'Justice Law Partners',
+                'domain': 'justicelaw.com',
+                'industry': 'legal',
+                'subcategory': 'corporate-law',
+                'size': 'large',
+                'revenue': '50m-100m',
+                'location': 'Washington, DC',
+                'technology': ['clio', 'microsoft', 'zoom'],
+                'job_titles': ['managing-partner', 'attorney', 'paralegal'],
+                'environmental': 'sustainable',
+                'social_impact': ['pro-bono-services']
+            }
+        ]
+
+    def _get_manufacturing_companies(self):
+        """Return manufacturing companies with detailed targeting data"""
+        return [
+            {
+                'name': 'Precision Manufacturing Co',
+                'domain': 'precisionmanufacturing.com',
+                'industry': 'manufacturing',
+                'subcategory': 'precision-manufacturing',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'Detroit, MI',
+                'technology': ['autocad', 'erp', 'iot'],
+                'job_titles': ['ceo', 'operations-director', 'quality-manager'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['local-employment']
+            }
+        ]
+
+    def _get_retail_companies(self):
+        """Return retail companies with detailed targeting data"""
+        return [
+            {
+                'name': 'Modern Retail Solutions',
+                'domain': 'modernretail.com',
+                'industry': 'retail',
+                'subcategory': 'brick-mortar',
+                'size': 'large',
+                'revenue': '50m-100m',
+                'location': 'Dallas, TX',
+                'technology': ['pos', 'inventory-management', 'crm'],
+                'job_titles': ['ceo', 'store-manager', 'buyer'],
+                'environmental': 'sustainable',
+                'social_impact': ['local-sourcing']
+            }
+        ]
+
+    def _get_restaurant_companies(self):
+        """Return restaurant companies with detailed targeting data"""
+        return [
+            {
+                'name': 'Culinary Excellence Group',
+                'domain': 'culinaryexcellence.com',
+                'industry': 'restaurant',
+                'subcategory': 'fine-dining',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'New Orleans, LA',
+                'technology': ['pos', 'reservation-system', 'inventory'],
+                'job_titles': ['ceo', 'executive-chef', 'general-manager'],
+                'environmental': 'organic',
+                'social_impact': ['farm-to-table']
+            }
+        ]
+
+    def _get_fitness_companies(self):
+        """Return fitness companies with detailed targeting data"""
+        return [
+            {
+                'name': 'FitLife Wellness Centers',
+                'domain': 'fitlifewellness.com',
+                'industry': 'fitness',
+                'subcategory': 'health-clubs',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'Phoenix, AZ',
+                'technology': ['membership-software', 'fitness-trackers', 'crm'],
+                'job_titles': ['ceo', 'fitness-director', 'membership-manager'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['community-health']
+            }
+        ]
+
+    def _get_beauty_companies(self):
+        """Return beauty companies with detailed targeting data"""
+        return [
+            {
+                'name': 'Beauty Innovations Inc',
+                'domain': 'beautyinnovations.com',
+                'industry': 'beauty',
+                'subcategory': 'cosmetics',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'Los Angeles, CA',
+                'technology': ['ecommerce', 'social-media', 'crm'],
+                'job_titles': ['ceo', 'creative-director', 'marketing-manager'],
+                'environmental': 'cruelty-free',
+                'social_impact': ['women-empowerment']
+            }
+        ]
+
+    def _get_automotive_companies(self):
+        """Return automotive companies with detailed targeting data"""
+        return [
+            {
+                'name': 'AutoTech Solutions',
+                'domain': 'autotechsolutions.com',
+                'industry': 'automotive',
+                'subcategory': 'auto-parts',
+                'size': 'large',
+                'revenue': '50m-100m',
+                'location': 'Detroit, MI',
+                'technology': ['erp', 'inventory-management', 'ecommerce'],
+                'job_titles': ['ceo', 'operations-director', 'sales-manager'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['veteran-owned']
+            }
+        ]
+
+    def _get_travel_companies(self):
+        """Return travel companies with detailed targeting data"""
+        return [
+            {
+                'name': 'Adventure Travel Co',
+                'domain': 'adventuretravel.com',
+                'industry': 'travel',
+                'subcategory': 'adventure-travel',
+                'size': 'medium',
+                'revenue': '10m-50m',
+                'location': 'Denver, CO',
+                'technology': ['booking-system', 'crm', 'social-media'],
+                'job_titles': ['ceo', 'travel-coordinator', 'marketing-manager'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['sustainable-tourism']
+            }
+        ]
+
+    def _get_nonprofit_companies(self):
+        """Return nonprofit companies with detailed targeting data"""
+        return [
+            {
+                'name': 'Community Impact Foundation',
+                'domain': 'communityimpact.org',
+                'industry': 'nonprofit',
+                'subcategory': 'community-development',
+                'size': 'medium',
+                'revenue': '1m-10m',
+                'location': 'Portland, OR',
+                'technology': ['donor-management', 'volunteer-system', 'crm'],
+                'job_titles': ['executive-director', 'program-manager', 'fundraiser'],
+                'environmental': 'eco-friendly',
+                'social_impact': ['community-development']
+            }
+        ]
+
+    def _get_government_companies(self):
+        """Return government companies with detailed targeting data"""
+        return [
+            {
+                'name': 'City Services Department',
+                'domain': 'cityservices.gov',
+                'industry': 'government',
+                'subcategory': 'municipal-services',
+                'size': 'large',
+                'revenue': 'over-100m',
+                'location': 'Sacramento, CA',
+                'technology': ['erp', 'crm', 'document-management'],
+                'job_titles': ['director', 'program-manager', 'administrator'],
+                'environmental': 'sustainable',
+                'social_impact': ['public-service']
+            }
+        ]
+
+    def _load_tech_companies(self, cursor):
         """Load technology companies with detailed targeting data"""
-        companies = [
+        companies = self._get_tech_companies()
+        self._add_companies_to_database(cursor, companies)
+
+    def _get_tech_companies(self):
+        return [
             {
                 'name': 'OutreachPilotPro',
                 'domain': 'outreachpilotpro.com',
@@ -191,11 +586,33 @@ class InfiniteEmailDatabase:
                 'social_impact': ['veteran-owned']
             }
         ]
-        
+
+    def _add_companies_to_database(self, cursor, companies: List[Dict]):
+        """Batch inserts a list of companies into the database."""
+        insert_query = """
+            INSERT OR IGNORE INTO company_database 
+            (name, domain, industry, subcategory, size, revenue, location, technology, job_titles, environmental, social_impact)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        company_data_tuples = []
         for company in companies:
-            self._add_company_to_database(company)
-    
-    def _load_ecommerce_companies(self):
+            company_data_tuples.append((
+                company.get('name', ''),
+                company.get('domain', ''),
+                company.get('industry', ''),
+                company.get('subcategory', ''),
+                company.get('size', ''),
+                company.get('revenue', ''),
+                company.get('location', ''),
+                json.dumps(company.get('technology', [])),
+                json.dumps(company.get('job_titles', [])),
+                company.get('environmental', ''),
+                json.dumps(company.get('social_impact', []))
+            ))
+        
+        cursor.executemany(insert_query, company_data_tuples)
+
+    def _load_ecommerce_companies(self, cursor):
         """Load e-commerce companies with detailed targeting data"""
         companies = [
             {
@@ -264,11 +681,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['local-sourcing']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_healthcare_companies(self):
+    def _load_healthcare_companies(self, cursor):
         """Load healthcare companies with detailed targeting data"""
         companies = [
             {
@@ -337,11 +752,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['innovation']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_finance_companies(self):
+    def _load_finance_companies(self, cursor):
         """Load finance companies with detailed targeting data"""
         companies = [
             {
@@ -410,11 +823,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['community-owned']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_real_estate_companies(self):
+    def _load_real_estate_companies(self, cursor):
         """Load real estate companies with detailed targeting data"""
         companies = [
             {
@@ -457,11 +868,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['community-focused']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_education_companies(self):
+    def _load_education_companies(self, cursor):
         """Load education companies with detailed targeting data"""
         companies = [
             {
@@ -504,11 +913,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['skill-development']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_consulting_companies(self):
+    def _load_consulting_companies(self, cursor):
         """Load consulting companies with detailed targeting data"""
         companies = [
             {
@@ -551,11 +958,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['client-focused']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_marketing_companies(self):
+    def _load_marketing_companies(self, cursor):
         """Load marketing companies with detailed targeting data"""
         companies = [
             {
@@ -598,11 +1003,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['engagement-focused']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_legal_companies(self):
+    def _load_legal_companies(self, cursor):
         """Load legal companies with detailed targeting data"""
         companies = [
             {
@@ -645,11 +1048,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['innovation-protection']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_manufacturing_companies(self):
+    def _load_manufacturing_companies(self, cursor):
         """Load manufacturing companies with detailed targeting data"""
         companies = [
             {
@@ -692,11 +1093,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['organic-focused']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_retail_companies(self):
+    def _load_retail_companies(self, cursor):
         """Load retail companies with detailed targeting data"""
         companies = [
             {
@@ -739,11 +1138,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['customer-focused']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_restaurant_companies(self):
+    def _load_restaurant_companies(self, cursor):
         """Load restaurant companies with detailed targeting data"""
         companies = [
             {
@@ -799,11 +1196,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['fair-trade', 'local-sourcing']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_fitness_companies(self):
+    def _load_fitness_companies(self, cursor):
         """Load fitness companies with detailed targeting data"""
         companies = [
             {
@@ -859,11 +1254,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['health-focused']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_beauty_companies(self):
+    def _load_beauty_companies(self, cursor):
         """Load beauty companies with detailed targeting data"""
         companies = [
             {
@@ -906,11 +1299,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['wellness-focused']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_automotive_companies(self):
+    def _load_automotive_companies(self, cursor):
         """Load automotive companies with detailed targeting data"""
         companies = [
             {
@@ -953,11 +1344,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['recycling-focused']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_travel_companies(self):
+    def _load_travel_companies(self, cursor):
         """Load travel companies with detailed targeting data"""
         companies = [
             {
@@ -1000,11 +1389,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['efficiency-focused']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_nonprofit_companies(self):
+    def _load_nonprofit_companies(self, cursor):
         """Load nonprofit companies with detailed targeting data"""
         companies = [
             {
@@ -1047,11 +1434,9 @@ class InfiniteEmailDatabase:
                 'social_impact': ['animal-welfare']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _load_government_companies(self):
+    def _load_government_companies(self, cursor):
         """Load government companies with detailed targeting data"""
         companies = [
             {
@@ -1094,82 +1479,11 @@ class InfiniteEmailDatabase:
                 'social_impact': ['public-service']
             }
         ]
-        
-        for company in companies:
-            self._add_company_to_database(company)
+        self._add_companies_to_database(cursor, companies)
     
-    def _add_company_to_database(self, company):
-        """Add a company with detailed targeting data to the database"""
-        try:
-            conn = sqlite3.connect("outreachpilot.db")
-            c = conn.cursor()
-            
-            # Check if company_database table exists and get its columns
-            c.execute("PRAGMA table_info(company_database)")
-            columns = [row[1] for row in c.fetchall()]
-            
-            # Create company_database table if it doesn't exist
-            if not columns:
-                c.execute("""
-                    CREATE TABLE IF NOT EXISTS company_database (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT NOT NULL,
-                        domain TEXT NOT NULL,
-                        industry TEXT,
-                        subcategory TEXT,
-                        size TEXT,
-                        revenue TEXT,
-                        location TEXT,
-                        technology TEXT,
-                        job_titles TEXT,
-                        environmental TEXT,
-                        social_impact TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                columns = ['name', 'domain', 'industry', 'subcategory', 'size', 'revenue', 'location', 'technology', 'job_titles', 'environmental', 'social_impact']
-            
-            # Build dynamic INSERT statement based on available columns
-            available_columns = []
-            values = []
-            
-            column_mapping = {
-                'company_name': company.get('name', ''),
-                'domain': company.get('domain', ''),
-                'industry': company.get('industry', ''),
-                'subcategory': company.get('subcategory', ''),
-                'size': company.get('size', ''),
-                'revenue': company.get('revenue', ''),
-                'location': company.get('location', ''),
-                'technology': json.dumps(company.get('technology', [])),
-                'job_titles': json.dumps(company.get('job_titles', [])),
-                'environmental': company.get('environmental', ''),
-                'social_impact': json.dumps(company.get('social_impact', []))
-            }
-            
-            for col, value in column_mapping.items():
-                if col in columns:
-                    available_columns.append(col)
-                    values.append(value)
-            
-            if available_columns:
-                placeholders = ', '.join(['?' for _ in available_columns])
-                columns_str = ', '.join(available_columns)
-                
-                c.execute(f"""
-                    INSERT OR REPLACE INTO company_database 
-                    ({columns_str})
-                    VALUES ({placeholders})
-                """, values)
-            
-            conn.commit()
-            conn.close()
-            
-        except Exception as e:
-            print(f"Warning: Could not add company to database: {e}")
-            # Don't fail the entire initialization if database operations fail
+
     
-    def _load_pharma_companies(self) -> List[Dict]:
+    def _get_pharma_companies(self) -> List[Dict]:
         """Load pharmaceutical companies"""
         return [
             {'name': 'Johnson & Johnson', 'domain': 'jnj.com', 'size': 'large'},
@@ -1189,7 +1503,7 @@ class InfiniteEmailDatabase:
             {'name': 'Moderna', 'domain': 'modernatx.com', 'size': 'medium'}
         ]
     
-    def _load_bank_companies(self) -> List[Dict]:
+    def _get_bank_companies(self) -> List[Dict]:
         """Load banking and financial companies"""
         return [
             {'name': 'JPMorgan Chase', 'domain': 'jpmorganchase.com', 'size': 'large'},
@@ -1209,6 +1523,56 @@ class InfiniteEmailDatabase:
             {'name': 'PNC Financial', 'domain': 'pnc.com', 'size': 'large'}
         ]
     
+    def _get_companies_from_database(self, industry: str = None, location: str = None, company_size: str = None) -> List[Dict]:
+        """Get companies from the database with optional filtering"""
+        try:
+            conn = sqlite3.connect(self.db_path, timeout=10)
+            c = conn.cursor()
+            
+            query = "SELECT name, domain, industry, subcategory, size, revenue, location, technology, job_titles, environmental, social_impact FROM company_database"
+            params = []
+            conditions = []
+            
+            if industry:
+                conditions.append("industry = ?")
+                params.append(industry)
+            
+            if location:
+                conditions.append("location LIKE ?")
+                params.append(f"%{location}%")
+            
+            if company_size:
+                conditions.append("size = ?")
+                params.append(company_size)
+            
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
+            
+            c.execute(query, params)
+            
+            results = []
+            for row in c.fetchall():
+                results.append({
+                    'name': row[0],
+                    'domain': row[1],
+                    'industry': row[2],
+                    'subcategory': row[3],
+                    'size': row[4],
+                    'revenue': row[5],
+                    'location': row[6],
+                    'technology': json.loads(row[7]) if row[7] else [],
+                    'job_titles': json.loads(row[8]) if row[8] else [],
+                    'environmental': row[9],
+                    'social_impact': json.loads(row[10]) if row[10] else []
+                })
+            
+            conn.close()
+            return results
+            
+        except Exception as e:
+            print(f"Error getting companies from database: {str(e)}")
+            return []
+
     def search_infinite_emails(self, industry: str = None, location: str = None, company_size: str = None, limit: int = 1000) -> Dict:
         """Search infinite email database with enhanced generation"""
         print(f"Searching infinite emails: industry={industry}, location={location}, size={company_size}, limit={limit}")
@@ -1363,6 +1727,33 @@ class InfiniteEmailDatabase:
         
         return emails[:limit]
     
+    def _simulate_social_networks(self, industry: str, location: str, limit: int) -> List[str]:
+        """Simulate social network results (medium volume)"""
+        emails = []
+        
+        # Simulate different social networks
+        social_networks = [
+            'linkedin.com', 'twitter.com', 'facebook.com', 'instagram.com',
+            'youtube.com', 'tiktok.com', 'snapchat.com', 'pinterest.com'
+        ]
+        
+        # Generate emails for each social network
+        for network in social_networks:
+            base_domain = network.replace('.', '').replace('-', '')
+            
+            # Generate realistic email patterns
+            for i in range(limit // len(social_networks)):
+                patterns = [
+                    f'user{i}@{base_domain}.com',
+                    f'contact{i}@{base_domain}.com',
+                    f'business{i}@{base_domain}.com',
+                    f'company{i}@{base_domain}.com',
+                    f'enterprise{i}@{base_domain}.com'
+                ]
+                emails.extend(patterns)
+        
+        return emails[:limit]
+    
     def _simulate_business_directories(self, industry: str, location: str, limit: int) -> List[str]:
         """Simulate business directory results (high volume)"""
         emails = []
@@ -1505,7 +1896,7 @@ class InfiniteEmailDatabase:
             logger.error(f"Error getting emails from database: {str(e)}")
             return []
     
-    def _load_vc_companies(self) -> List[Dict]:
+    def _get_vc_companies(self) -> List[Dict]:
         """Load venture capital companies"""
         return [
             {'name': 'Sequoia Capital', 'domain': 'sequoiacap.com', 'size': 'large'},
@@ -1520,7 +1911,7 @@ class InfiniteEmailDatabase:
             {'name': 'Index Ventures', 'domain': 'indexventures.com', 'size': 'large'}
         ]
     
-    def _load_healthcare_systems(self) -> List[Dict]:
+    def _get_healthcare_systems(self) -> List[Dict]:
         """Load healthcare systems"""
         return [
             {'name': 'Mayo Clinic', 'domain': 'mayoclinic.org', 'size': 'large'},
@@ -1535,7 +1926,7 @@ class InfiniteEmailDatabase:
             {'name': 'Northwestern Medicine', 'domain': 'nm.org', 'size': 'large'}
         ]
     
-    def _load_investment_firms(self) -> List[Dict]:
+    def _get_investment_firms(self) -> List[Dict]:
         """Load investment firms"""
         return [
             {'name': 'BlackRock', 'domain': 'blackrock.com', 'size': 'large'},

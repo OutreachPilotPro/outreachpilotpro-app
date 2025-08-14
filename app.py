@@ -33,6 +33,9 @@ import email_database
 from authlib.integrations.flask_client import OAuth
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+# ADD: Import base64 for Microsoft Graph API
+import base64
+from datetime import timedelta
 
 app = Flask(__name__)
 print("🔧 Loading configuration...")
@@ -64,6 +67,22 @@ try:
         api_base_url='https://www.googleapis.com/oauth2/v2/',
         client_kwargs={
             'scope': 'openid email profile https://www.googleapis.com/auth/gmail.send'
+        }
+    )
+    
+    # Register Microsoft OAuth
+    oauth.register(
+        name='microsoft',
+        client_id=app.config['MICROSOFT_CLIENT_ID'],
+        client_secret=app.config['MICROSOFT_CLIENT_SECRET'],
+        access_token_url='https://login.microsoftonline.com/common/oauth2/v2.0/token',
+        access_token_params=None,
+        authorize_url='https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+        authorize_params=None,
+        api_base_url='https://graph.microsoft.com/v1.0/',
+        client_kwargs={
+            # FIX: Add the Mail.Send and offline_access scopes
+            'scope': 'User.Read openid email profile Mail.Send offline_access'
         }
     )
 except Exception as e:
@@ -202,6 +221,20 @@ def init_enhanced_database():
                 verification_source VARCHAR(100)
             )
         ''')
+        
+        # In the database initialization, add a table for OAuth tokens
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS user_oauth_tokens (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                provider VARCHAR(50) NOT NULL, -- 'google' or 'microsoft'
+                access_token TEXT NOT NULL,
+                refresh_token TEXT,
+                expires_at TIMESTAMP WITH TIME ZONE,
+                UNIQUE(user_id, provider),
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
     else:
         # SQLite-compatible schema
         c.execute('''
@@ -264,6 +297,20 @@ def init_enhanced_database():
                 verification_source TEXT
             )
         ''')
+        
+        # In the database initialization, add a table for OAuth tokens
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS user_oauth_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                provider TEXT NOT NULL, -- 'google' or 'microsoft'
+                access_token TEXT NOT NULL,
+                refresh_token TEXT,
+                expires_at TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                UNIQUE(user_id, provider)
+            )
+        ''')
     
     conn.commit()
     conn.close()
@@ -276,6 +323,178 @@ except Exception as e:
 
 # Initialize consolidated email finder service
 email_finder = EmailFinder()
+
+# Create a generic function to store tokens
+def store_oauth_token(user_id, provider, token):
+    """Store OAuth tokens in the database."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    # Calculate expiration time
+    expires_at = datetime.now() + timedelta(seconds=token.get('expires_in', 3600))
+    
+    # Encrypt tokens before storing in a real application
+    if is_postgres():
+        c.execute("""
+            INSERT INTO user_oauth_tokens (user_id, provider, access_token, refresh_token, expires_at)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT(user_id, provider) DO UPDATE SET
+            access_token=EXCLUDED.access_token,
+            refresh_token=EXCLUDED.refresh_token,
+            expires_at=EXCLUDED.expires_at
+        """, (
+            user_id,
+            provider,
+            token['access_token'],
+            token.get('refresh_token'),
+            expires_at
+        ))
+    else:
+        c.execute("""
+            INSERT OR REPLACE INTO user_oauth_tokens (user_id, provider, access_token, refresh_token, expires_at)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            user_id,
+            provider,
+            token['access_token'],
+            token.get('refresh_token'),
+            expires_at
+        ))
+    
+    conn.commit()
+    conn.close()
+
+def get_oauth_token(user_id, provider):
+    """Retrieve OAuth token from the database."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    c.execute("SELECT access_token, refresh_token, expires_at FROM user_oauth_tokens WHERE user_id = ? AND provider = ?", 
+             (user_id, provider))
+    token_data = c.fetchone()
+    conn.close()
+    
+    if token_data:
+        access_token, refresh_token, expires_at = token_data
+        # Check if token is expired
+        if expires_at and datetime.now() > expires_at:
+            # Token is expired, would need refresh logic here
+            return None
+        return {
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'expires_at': expires_at
+        }
+    return None
+
+def send_email_with_microsoft_graph(user_id, to_email, subject, body, sender_email=None):
+    """Send email using Microsoft Graph API with stored OAuth token."""
+    try:
+        # Get the stored Microsoft token
+        token_data = get_oauth_token(user_id, 'microsoft')
+        if not token_data:
+            raise Exception("No valid Microsoft OAuth token found")
+        
+        access_token = token_data['access_token']
+        
+        # Microsoft Graph API endpoint for sending email
+        url = "https://graph.microsoft.com/v1.0/me/sendMail"
+        
+        # Prepare the email message
+        message = {
+            "message": {
+                "subject": subject,
+                "body": {
+                    "contentType": "HTML",
+                    "content": body
+                },
+                "toRecipients": [
+                    {
+                        "emailAddress": {
+                            "address": to_email
+                        }
+                    }
+                ]
+            }
+        }
+        
+        # Add sender if specified
+        if sender_email:
+            message["message"]["from"] = {
+                "emailAddress": {
+                    "address": sender_email
+                }
+            }
+        
+        # Send the email
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        response = requests.post(url, json=message, headers=headers)
+        
+        if response.status_code == 202:  # Microsoft Graph returns 202 for successful send
+            return True
+        else:
+            print(f"Microsoft Graph API error: {response.status_code} - {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"Error sending email with Microsoft Graph: {e}")
+        return False
+
+def send_email_with_gmail_api(user_id, to_email, subject, body, sender_email=None):
+    """Send email using Gmail API with stored OAuth token."""
+    try:
+        # Get the stored Google token
+        token_data = get_oauth_token(user_id, 'google')
+        if not token_data:
+            raise Exception("No valid Google OAuth token found")
+        
+        access_token = token_data['access_token']
+        
+        # Gmail API endpoint for sending email
+        url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+        
+        # Create the email message
+        import email
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        
+        msg = MIMEMultipart()
+        msg['to'] = to_email
+        msg['subject'] = subject
+        
+        if sender_email:
+            msg['from'] = sender_email
+        
+        msg.attach(MIMEText(body, 'html'))
+        
+        # Encode the message
+        raw_message = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
+        
+        # Send the email
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        data = {
+            'raw': raw_message
+        }
+        
+        response = requests.post(url, json=data, headers=headers)
+        
+        if response.status_code == 200:
+            return True
+        else:
+            print(f"Gmail API error: {response.status_code} - {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"Error sending email with Gmail API: {e}")
+        return False
 
 @app.route("/")
 def index():
@@ -347,58 +566,77 @@ def login():
         email = request.form.get('email')
         password = request.form.get('password')
         
+        # Validate input
+        if not email or not password:
+            flash('Please enter both email and password', 'error')
+            return render_template("login.html")
+        
+        if not email or '@' not in email:
+            flash('Please enter a valid email address', 'error')
+            return render_template("login.html")
+        
         # Enhanced login system with password support
         conn = get_db_connection()
         c = conn.cursor()
         
-        # Check if user exists
-        c.execute("SELECT id, email, name, password_hash FROM users WHERE email = ?", (email,))
-        user = c.fetchone()
-        
-        if user:
-            user_id, user_email, user_name, password_hash = user
+        try:
+            # Check if user exists
+            c.execute("SELECT id, email, name, password_hash FROM users WHERE email = ?", (email,))
+            user = c.fetchone()
             
-            # If password_hash exists, verify password
-            if password_hash:
-                from werkzeug.security import check_password_hash
-                if check_password_hash(password_hash, password):
+            if user:
+                user_id, user_email, user_name, password_hash = user
+                
+                # If password_hash exists, verify password
+                if password_hash:
+                    from werkzeug.security import check_password_hash
+                    if check_password_hash(password_hash, password):
+                        session['user'] = {
+                            'id': user_id,
+                            'email': user_email,
+                            'name': user_name
+                        }
+                        conn.close()
+                        flash('Welcome back!', 'success')
+                        return redirect(url_for('dashboard'))
+                    else:
+                        flash('Invalid email or password. Please try again.', 'error')
+                        conn.close()
+                        return render_template("login.html")
+                else:
+                    # Legacy user without password, log them in
                     session['user'] = {
                         'id': user_id,
                         'email': user_email,
                         'name': user_name
                     }
                     conn.close()
+                    flash('Welcome back!', 'success')
                     return redirect(url_for('dashboard'))
-                else:
-                    flash('Invalid password', 'error')
-                    conn.close()
-                    return render_template("login.html")
             else:
-                # Legacy user without password, log them in
+                # Create new user with password
+                from werkzeug.security import generate_password_hash
+                password_hash = generate_password_hash(password) if password else None
+                
+                c.execute("INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)", 
+                         (email, email.split('@')[0], password_hash))
+                user_id = c.lastrowid
+                conn.commit()
+                conn.close()
+                
                 session['user'] = {
                     'id': user_id,
-                    'email': user_email,
-                    'name': user_name
+                    'email': email,
+                    'name': email.split('@')[0]
                 }
-                conn.close()
+                flash('Account created successfully! Welcome to OutreachPilotPro.', 'success')
                 return redirect(url_for('dashboard'))
-        else:
-            # Create new user with password
-            from werkzeug.security import generate_password_hash
-            password_hash = generate_password_hash(password) if password else None
-            
-            c.execute("INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)", 
-                     (email, email.split('@')[0], password_hash))
-            user_id = c.lastrowid
-            conn.commit()
+                
+        except Exception as e:
             conn.close()
-            
-            session['user'] = {
-                'id': user_id,
-                'email': email,
-                'name': email.split('@')[0]
-            }
-            return redirect(url_for('dashboard'))
+            print(f"Login error: {e}")
+            flash('An error occurred during login. Please try again.', 'error')
+            return render_template("login.html")
     
     return render_template("login.html")
 
@@ -461,14 +699,45 @@ def google_authorize():
         user = get_or_create_user(user_info)
         session['user'] = user
         
-        # Store Google token for Gmail access
-        if 'access_token' in token:
-            store_google_token(user['id'], token['access_token'])
+        # Use the new generic function to store the token
+        store_oauth_token(user['id'], 'google', token)
         
+        flash('Successfully signed in with Google!', 'success')
         return redirect(url_for('dashboard'))
     except Exception as e:
         print(f"Google OAuth error: {e}")
-        flash('Google login failed. Please try again.', 'error')
+        flash('Google login failed. Please try again or use email/password login.', 'error')
+        return redirect(url_for('login'))
+
+@app.route("/login/microsoft", endpoint='microsoft_login')
+def microsoft_login():
+    """Microsoft OAuth login"""
+    redirect_uri = url_for('microsoft_authorize', _external=True)
+    return oauth.microsoft.authorize_redirect(redirect_uri)
+
+@app.route("/login/microsoft/authorize", endpoint='microsoft_authorize')
+def microsoft_authorize():
+    """Microsoft OAuth callback"""
+    try:
+        token = oauth.microsoft.authorize_access_token()
+        user_info = oauth.microsoft.get('me').json()
+        
+        standardized_user_info = {
+            'email': user_info.get('userPrincipalName') or user_info.get('mail'),
+            'name': user_info.get('displayName', 'Microsoft User')
+        }
+        
+        user = get_or_create_user(standardized_user_info)
+        session['user'] = user
+        
+        # Store the token for later use
+        store_oauth_token(user['id'], 'microsoft', token)
+        
+        flash('Successfully signed in with Microsoft!', 'success')
+        return redirect(url_for('dashboard'))
+    except Exception as e:
+        print(f"Microsoft OAuth error: {e}")
+        flash('Microsoft login failed. Please try again.', 'error')
         return redirect(url_for('login'))
 
 @app.route("/logout", endpoint='logout')
@@ -593,11 +862,18 @@ def new_campaign():
 
 @app.route("/campaigns/<int:campaign_id>/send", methods=['POST'], endpoint='send_campaign')
 def send_campaign(campaign_id):
-    """Send campaign emails"""
+    """Send campaign emails using stored OAuth tokens"""
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
     user_id = session['user']['id']
+    
+    # Get request data
+    data = request.get_json() or {}
+    provider = data.get('provider', 'microsoft')  # Default to Microsoft
+    subject = data.get('subject', 'Campaign Email')
+    body = data.get('body', 'This is a campaign email.')
+    sender_email = data.get('sender_email')
     
     # Verify campaign ownership
     conn = get_db_connection()
@@ -616,18 +892,42 @@ def send_campaign(campaign_id):
     conn.commit()
     conn.close()
     
-    # Send emails (simplified - in production you'd use proper email service)
+    # Send emails using stored OAuth tokens
     email_list = [e.strip() for e in emails_text.split('\n') if e.strip()]
+    successful_sends = 0
+    
+    for email in email_list:
+        try:
+            if provider == 'microsoft':
+                success = send_email_with_microsoft_graph(user_id, email, subject, body, sender_email)
+            elif provider == 'google':
+                success = send_email_with_gmail_api(user_id, email, subject, body, sender_email)
+            else:
+                print(f"Unsupported provider: {provider}")
+                continue
+            
+            if success:
+                successful_sends += 1
+            else:
+                print(f"Failed to send email to {email}")
+                
+        except Exception as e:
+            print(f"Error sending email to {email}: {e}")
     
     # Update email usage
     conn = get_db_connection()
     c = conn.cursor()
     c.execute("UPDATE email_usage SET emails_sent = emails_sent + ? WHERE user_id = ? AND date = DATE('now')", 
-             (len(email_list), user_id))
+             (successful_sends, user_id))
     conn.commit()
     conn.close()
     
-    return jsonify({'success': True, 'emails_sent': len(email_list)})
+    return jsonify({
+        'success': True, 
+        'emails_sent': successful_sends,
+        'total_emails': len(email_list),
+        'provider': provider
+    })
 
 @app.route("/subscription", endpoint='subscription_page')
 def subscription_page():
@@ -1088,6 +1388,68 @@ def health_check():
         'version': '2.0.0'
     })
 
+@app.route("/api/send-email", methods=['POST'], endpoint='send_email_api')
+def send_email_api():
+    """Send email using stored OAuth tokens"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    data = request.get_json()
+    to_email = data.get('to_email')
+    subject = data.get('subject')
+    body = data.get('body')
+    provider = data.get('provider', 'microsoft')  # Default to Microsoft
+    sender_email = data.get('sender_email')
+    
+    if not all([to_email, subject, body]):
+        return jsonify({'error': 'Missing required fields: to_email, subject, body'}), 400
+    
+    user_id = session['user']['id']
+    
+    try:
+        if provider == 'microsoft':
+            success = send_email_with_microsoft_graph(user_id, to_email, subject, body, sender_email)
+        elif provider == 'google':
+            success = send_email_with_gmail_api(user_id, to_email, subject, body, sender_email)
+        else:
+            return jsonify({'error': 'Unsupported provider. Use "microsoft" or "google"'}), 400
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Email sent successfully'})
+        else:
+            return jsonify({'error': 'Failed to send email'}), 500
+            
+    except Exception as e:
+        print(f"Error in send_email_api: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/api/oauth-status", methods=['GET'], endpoint='oauth_status')
+def oauth_status():
+    """Check OAuth token status for the current user"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user_id = session['user']['id']
+    
+    try:
+        microsoft_token = get_oauth_token(user_id, 'microsoft')
+        google_token = get_oauth_token(user_id, 'google')
+        
+        return jsonify({
+            'microsoft': {
+                'connected': microsoft_token is not None,
+                'expires_at': microsoft_token['expires_at'].isoformat() if microsoft_token else None
+            },
+            'google': {
+                'connected': google_token is not None,
+                'expires_at': google_token['expires_at'].isoformat() if google_token else None
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error checking OAuth status: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route("/api/email-search", methods=['POST'], endpoint='email_search')
 def email_search():
     """Search for emails based on query and filters"""
@@ -1355,11 +1717,7 @@ def get_or_create_user(user_info):
             'name': name
         }
 
-def store_google_token(user_id, token):
-    """Store Google OAuth token for Gmail access"""
-    # In production, you'd want to encrypt this token
-    # For now, we'll just store it in the session
-    session['google_token'] = token
+
 
 @app.errorhandler(404)
 def not_found_error(error):
