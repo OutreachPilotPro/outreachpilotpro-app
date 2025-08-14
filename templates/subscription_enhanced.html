@@ -331,7 +331,7 @@
                 <h2>Your Current Plan</h2>
                 <div class="plan-details">
                     <div class="plan-stat">
-                        <h3>{{ subscription.plan_id.title() if subscription else 'Free' }}</h3>
+                        <h3>{{ subscription.tier.title() if subscription else 'Free' }}</h3>
                         <p>Current Plan</p>
                     </div>
                     <div class="plan-stat">
@@ -355,7 +355,7 @@
             <!-- Plans Grid -->
             <div class="plans-grid">
                 {% for plan_id, plan in plans.items() %}
-                <div class="plan-card {% if subscription and subscription.plan_id == plan_id %}featured{% endif %}">
+                <div class="plan-card {% if subscription and subscription.tier == plan_id %}featured{% endif %}">
                     <div class="plan-name">{{ plan.name }}</div>
                     <div class="plan-price">
                         <span class="currency">$</span>{{ plan.price }}
@@ -372,7 +372,7 @@
                         {% endfor %}
                     </ul>
                     
-                    {% if subscription and subscription.plan_id == plan_id %}
+                    {% if subscription and subscription.tier == plan_id %}
                         <button class="current-plan-btn" disabled>Current Plan</button>
                     {% else %}
                         <button class="upgrade-btn" onclick="upgradeToPlan('{{ plan_id }}')" data-plan-id="{{ plan_id }}">

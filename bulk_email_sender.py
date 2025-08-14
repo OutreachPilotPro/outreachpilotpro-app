@@ -15,6 +15,7 @@ from config import get_smtp_config
 import requests
 import sqlite3
 import base64
+import os
 
 # Make redis optional
 try:
@@ -25,9 +26,11 @@ except ImportError:
     print("Warning: Redis not available. Rate limiting will be disabled.")
 
 class BulkEmailSender:
-    def __init__(self, redis_url="redis://localhost:6379"):
+    def __init__(self):  # <-- Remove the redis_url parameter
         if REDIS_AVAILABLE:
             try:
+                # Read from the environment variable, with a fallback for local dev
+                redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
                 self.redis_client = redis.from_url(redis_url)
             except Exception as e:
                 print(f"Warning: Could not connect to Redis: {e}")

@@ -5,6 +5,7 @@ Single source of truth combining the best features from all app variants
 """
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 import psycopg2
 from psycopg2.extras import DictCursor
@@ -41,6 +42,9 @@ app = Flask(__name__)
 print("🔧 Loading configuration...")
 app.config.from_object(Config)
 print("✅ Configuration loaded successfully")
+
+# Apply ProxyFix middleware for reverse proxy support
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # Production security settings
 if app.config['FLASK_ENV'] == 'production':
@@ -180,11 +184,15 @@ def init_enhanced_database():
             CREATE TABLE IF NOT EXISTS subscriptions (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER REFERENCES users(id),
-                plan_id VARCHAR(100) NOT NULL,
-                status VARCHAR(50) DEFAULT 'active',
+                tier VARCHAR(100) NOT NULL DEFAULT 'free',
+                stripe_customer_id VARCHAR(255),
                 stripe_subscription_id VARCHAR(255),
+                status VARCHAR(50) DEFAULT 'active',
+                current_period_start TIMESTAMP WITH TIME ZONE,
+                current_period_end TIMESTAMP WITH TIME ZONE,
+                cancel_at_period_end BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                expires_at TIMESTAMP WITH TIME ZONE
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         
@@ -253,11 +261,15 @@ def init_enhanced_database():
             CREATE TABLE IF NOT EXISTS subscriptions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
-                plan_id TEXT NOT NULL,
-                status TEXT DEFAULT 'active',
+                tier TEXT NOT NULL DEFAULT 'free',
+                stripe_customer_id TEXT,
                 stripe_subscription_id TEXT,
+                status TEXT DEFAULT 'active',
+                current_period_start TIMESTAMP,
+                current_period_end TIMESTAMP,
+                cancel_at_period_end BOOLEAN DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                expires_at TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users (id)
             )
         ''')
@@ -744,7 +756,7 @@ def microsoft_authorize():
 def logout():
     """Logout user"""
     session.pop('user', None)
-    return redirect(url_for('home'))
+    return redirect(url_for('index'))
 
 @app.route("/dashboard", endpoint='dashboard')
 def dashboard():
@@ -799,14 +811,14 @@ def scrape_page():
     """Email scraping page"""
     if 'user' not in session:
         return redirect(url_for('login'))
-    return render_template("scrape.html")
+    return render_template("scrape.html", user=session['user'])  # <-- ADD THIS
 
 @app.route("/scrape-enhanced", endpoint='scrape_enhanced_page')
 def scrape_enhanced_page():
     """Enhanced email scraping page"""
     if 'user' not in session:
         return redirect(url_for('login'))
-    return render_template("scrape_enhanced.html")
+    return render_template("scrape_enhanced.html", user=session['user'])  # <-- ADD THIS
 
 @app.route("/campaigns", endpoint='campaigns_page')
 def campaigns_page():
@@ -823,7 +835,7 @@ def campaigns_page():
     
     conn.close()
     
-    return render_template("campaigns.html", campaigns=campaigns)
+    return render_template("campaigns.html", campaigns=campaigns, user=session['user'])
 
 @app.route("/campaigns/new", methods=['GET', 'POST'], endpoint='new_campaign')
 def new_campaign():
@@ -837,7 +849,7 @@ def new_campaign():
         
         if not name or not emails:
             flash('Campaign name and emails are required', 'error')
-            return render_template("new_campaign.html")
+            return render_template("new_campaign.html", user=session['user'])
         
         user_id = session['user']['id']
         conn = get_db_connection()
@@ -858,7 +870,7 @@ def new_campaign():
         flash('Campaign created successfully!', 'success')
         return redirect(url_for('campaigns_page'))
     
-    return render_template("new_campaign.html")
+    return render_template("new_campaign.html", user=session['user'])
 
 @app.route("/campaigns/<int:campaign_id>/send", methods=['POST'], endpoint='send_campaign')
 def send_campaign(campaign_id):
@@ -940,8 +952,10 @@ def subscription_page():
     # Get current subscription
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("SELECT s.plan_id, s.status, s.stripe_subscription_id FROM subscriptions s WHERE s.user_id = ? AND s.status = 'active' ORDER BY s.created_at DESC LIMIT 1", (user_id,))
+    c.execute("SELECT s.tier, s.status, s.stripe_subscription_id FROM subscriptions s WHERE s.user_id = ? AND s.status = 'active' ORDER BY s.created_at DESC LIMIT 1", (user_id,))
     subscription = c.fetchone()
+    if subscription:
+        subscription = {'plan_id': subscription[0], 'status': subscription[1], 'stripe_subscription_id': subscription[2]}
     
     # Get available plans
     plans = [
@@ -1105,7 +1119,7 @@ def stripe_webhook():
         c.execute("UPDATE subscriptions SET status = 'cancelled' WHERE user_id = ? AND status = 'active'", (user_id,))
         
         # Create new subscription
-        c.execute("INSERT INTO subscriptions (user_id, plan_id, status, stripe_subscription_id) VALUES (?, ?, 'active', ?)", 
+        c.execute("INSERT INTO subscriptions (user_id, tier, status, stripe_subscription_id) VALUES (?, ?, 'active', ?)", 
                  (user_id, plan_id, session['subscription']))
         
         conn.commit()
