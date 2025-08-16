@@ -946,30 +946,35 @@ def subscription_page():
     """Subscription management page"""
     if 'user' not in session:
         return redirect(url_for('login'))
-    
+
     user_id = session['user']['id']
+
+    # === FIX STARTS HERE ===
+
+    # Get user subscription and usage stats from the manager
+    subscription = subscription_mgr.get_user_subscription(user_id)
+    usage_stats_raw = subscription_mgr.get_usage_stats(user_id)
+
+    # Get available plans from the SubscriptionManager
+    plans = subscription_manager.SubscriptionPlans.PLANS
+
+    # Transform usage stats to a simpler format for the template
+    current_month_usage = usage_stats_raw.get('current_month', {})
+    limits = current_month_usage.get('limits', plans.get(subscription.get('tier', 'free'), {}).get('limits', {}))
+
+    usage_stats = {
+        'emails_used': current_month_usage.get('emails_sent', 0),
+        'emails_limit': limits.get('emails_per_month', 0),
+        'campaigns_used': current_month_usage.get('campaigns_created', 0),
+        'campaigns_limit': limits.get('campaigns_per_month', 1)
+    }
+
+    # === FIX ENDS HERE ===
     
-    # Get current subscription
-    conn = get_db_connection()
-    c = conn.cursor()
-    c.execute("SELECT s.tier, s.status, s.stripe_subscription_id FROM subscriptions s WHERE s.user_id = ? AND s.status = 'active' ORDER BY s.created_at DESC LIMIT 1", (user_id,))
-    subscription = c.fetchone()
-    if subscription:
-        subscription = {'plan_id': subscription[0], 'status': subscription[1], 'stripe_subscription_id': subscription[2]}
-    
-    # Get available plans
-    plans = [
-        {'id': 'free', 'name': 'Free', 'price': 0, 'emails_per_month': 100, 'features': ['Basic email scraping', 'Simple campaigns']},
-        {'id': 'starter', 'name': 'Starter', 'price': 29, 'emails_per_month': 1000, 'features': ['Advanced scraping', 'Campaign management', 'Email verification']},
-        {'id': 'professional', 'name': 'Professional', 'price': 99, 'emails_per_month': 10000, 'features': ['Unlimited scraping', 'Advanced analytics', 'Priority support']},
-        {'id': 'enterprise', 'name': 'Enterprise', 'price': 299, 'emails_per_month': 100000, 'features': ['Custom integrations', 'Dedicated support', 'SLA guarantee']}
-    ]
-    
-    conn.close()
-    
-    return render_template("subscription.html", 
+    return render_template("subscription.html",
                          subscription=subscription,
                          plans=plans,
+                         usage_stats=usage_stats,  # Pass the corrected usage_stats
                          stripe_public_key=app.config.get('STRIPE_PUBLISHABLE_KEY'))
 
 @app.route("/subscription/upgrade/<plan_id>", endpoint='upgrade_subscription')
